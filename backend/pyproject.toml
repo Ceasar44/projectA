@@ -1,0 +1,69 @@
+[project]
+name = "owly-backend"
+version = "0.1.0"
+description = "FastAPI backend for Owly"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.116.0",
+  "uvicorn[standard]>=0.35.0",
+  "sqlalchemy>=2.0.43",
+  "asyncpg>=0.30.0",
+  "aiosqlite>=0.21.0",
+  "psycopg[binary]>=3.2.9",
+  "alembic>=1.16.0",
+  "pydantic>=2.11.0",
+  "pydantic-settings>=2.10.0",
+  "python-jose[cryptography]>=3.5.0",
+  "passlib[bcrypt]>=1.7.4",
+  "structlog>=25.4.0",
+  "redis>=6.0.0",
+  "httpx>=0.28.1",
+  "orjson>=3.11.0",
+  "langgraph>=0.2.0",
+  "langchain>=0.3.0",
+  "langchain-core>=0.3.0",
+  "langchain-openai>=0.2.0",
+  "langgraph-checkpoint-postgres>=2.0.0",
+  "python-multipart>=0.0.9",
+  "python-dotenv>=1.0.0",
+  "openai>=1.0.0",
+  "dashscope>=1.20.0",
+  "psycopg-pool>=3.1.0",
+  "pymilvus>=2.5.0",
+  "oss2>=2.18.0",
+  "alibabacloud_oss_v2>=1.1.0",
+  "pageindex",
+  "pymupdf>=1.24.0",
+  "python-docx>=1.1.0",
+  "pandas>=2.0.0",
+  "openpyxl>=3.1.0",
+  "tiktoken>=0.5.0",
+  "cryptography>=45.0.7,<47",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.4.0",
+  "pytest-asyncio>=1.1.0",
+  "anyio>=4.10.0",
+  "ruff>=0.12.0",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

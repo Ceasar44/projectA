@@ -1,0 +1,1 @@
+"""Operational settings domain."""

@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+env/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+
+# Python caches and packaging
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
+pytest-cache-files-*/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Databases and local runtime files
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.log
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

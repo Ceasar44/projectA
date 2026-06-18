@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: owly
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: .
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/owly
+      JWT_SECRET: change-this-before-production
+      REDIS_URL: redis://redis:6379/0
+      WEBHOOK_SECRET: change-this-before-production
+      AUTO_CREATE_SCHEMA: "false"
+      CORS_ORIGINS: http://localhost:3000,http://localhost:8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  postgres_data:
