@@ -5,10 +5,12 @@ import json
 import sys
 import types
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from threading import Event
 from typing import TYPE_CHECKING, Any
 
+from app.domain.customer_support.memory import CrmMemoryIdentity
 from app.infrastructure.db.models.conversations import Conversation
 from app.infrastructure.db.models.knowledge import KnowledgeEntry
 from app.infrastructure.db.models.operations import Settings
@@ -250,6 +252,225 @@ class CrmSupportTool:
         return ToolResult.success(result) if result.get("success") else ToolResult.fail(result)
 
 
+@dataclass
+class _CrmMemorySearchResult:
+    path: str
+    start_line: int
+    end_line: int
+    score: float
+    snippet: str
+
+
+class CrmTurnMemoryManager:
+    """Per-turn memory manager that can read snapshots and collect drafts only."""
+
+    def __init__(self, *, identity: CrmMemoryIdentity, snapshot: dict[str, Any]) -> None:
+        self.identity = identity
+        self.snapshot = snapshot
+        self.drafts: list[dict[str, Any]] = []
+
+    async def search(
+        self,
+        *,
+        query: str,
+        user_id: str | None = None,
+        max_results: int = 10,
+        min_score: float = 0.1,
+        include_shared: bool = True,
+    ) -> list[_CrmMemorySearchResult]:
+        del user_id, include_shared
+        query_terms = [term.casefold() for term in str(query or "").split() if term.strip()]
+        matches: list[_CrmMemorySearchResult] = []
+        for scope, items in self.snapshot.items():
+            for index, item in enumerate(items or [], start=1):
+                content = str((item or {}).get("content") or "")
+                if not content:
+                    continue
+                text = " ".join(
+                    [
+                        str((item or {}).get("kind") or ""),
+                        content,
+                        str((item or {}).get("sourceCustomerMessage") or ""),
+                    ]
+                )
+                score = self._score(text, query_terms)
+                if score < min_score:
+                    continue
+                matches.append(
+                    _CrmMemorySearchResult(
+                        path=f"{scope}/memory#{index}",
+                        start_line=1,
+                        end_line=1,
+                        score=score,
+                        snippet=content[:500],
+                    )
+                )
+        matches.sort(key=lambda result: result.score, reverse=True)
+        return matches[:max_results]
+
+    def get(self, path: str) -> str:
+        try:
+            scope, marker = path.split("/memory#", 1)
+            index = int(marker) - 1
+        except (ValueError, AttributeError):
+            return ""
+        items = self.snapshot.get(scope) or []
+        if index < 0 or index >= len(items):
+            return ""
+        item = items[index] or {}
+        return "\n".join(
+            part
+            for part in [
+                f"Scope: {scope}",
+                f"Kind: {item.get('kind') or 'note'}",
+                f"Confidence: {item.get('confidence') or ''}",
+                f"Content: {item.get('content') or ''}",
+            ]
+            if part.strip()
+        )
+
+    def remember(self, draft: dict[str, Any]) -> None:
+        self.drafts.append(
+            {
+                "scope": draft.get("scope") or "conversation",
+                "kind": draft.get("kind") or "note",
+                "content": draft.get("content") or "",
+                "confidence": draft.get("confidence") or 0.7,
+            }
+        )
+
+    @staticmethod
+    def _score(text: str, query_terms: list[str]) -> float:
+        if not query_terms:
+            return 0.3
+        folded = text.casefold()
+        hits = sum(1 for term in query_terms if term in folded)
+        if hits == 0:
+            return 0.0
+        return min(1.0, 0.25 + hits / max(len(query_terms), 1))
+
+
+class CrmMemorySearchTool:
+    name = "memory_search"
+    description = "Search this CRM customer's approved memory snapshot."
+    params = {
+        "type": "object",
+        "properties": {
+            "query": {"type": "string", "description": "Natural language memory query."},
+            "max_results": {"type": "integer", "default": 5},
+            "min_score": {"type": "number", "default": 0.1},
+        },
+        "required": ["query"],
+    }
+
+    def __init__(self, memory_manager: CrmTurnMemoryManager, is_stale: Callable[[], bool]) -> None:
+        _ensure_extern_agent_runtime()
+        from agent.tools.base_tool import ToolStage
+
+        self.stage = ToolStage.PRE_PROCESS
+        self.memory_manager = memory_manager
+        self.is_stale = is_stale
+
+    def get_json_schema(self) -> dict[str, Any]:
+        return {"name": self.name, "description": self.description, "parameters": self.params}
+
+    def execute_tool(self, params: dict[str, Any]):
+        return self.execute(params)
+
+    def execute(self, params: dict[str, Any]):
+        from agent.tools.base_tool import ToolResult
+
+        if self.is_stale():
+            return ToolResult.fail({"success": False, "message": "This agent turn is stale."})
+        results = asyncio.run(
+            self.memory_manager.search(
+                query=str(params.get("query") or ""),
+                max_results=int(params.get("max_results") or 5),
+                min_score=float(params.get("min_score") or 0.1),
+            )
+        )
+        if not results:
+            return ToolResult.success("No approved CRM memories matched.")
+        lines = ["Found approved CRM memories:"]
+        for index, result in enumerate(results, start=1):
+            lines.append(f"{index}. {result.path} score={result.score:.2f}: {result.snippet}")
+        return ToolResult.success("\n".join(lines))
+
+
+class CrmMemoryGetTool:
+    name = "memory_get"
+    description = "Read an approved CRM memory item returned by memory_search."
+    params = {
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "description": "Path returned by memory_search."},
+        },
+        "required": ["path"],
+    }
+
+    def __init__(self, memory_manager: CrmTurnMemoryManager, is_stale: Callable[[], bool]) -> None:
+        _ensure_extern_agent_runtime()
+        from agent.tools.base_tool import ToolStage
+
+        self.stage = ToolStage.PRE_PROCESS
+        self.memory_manager = memory_manager
+        self.is_stale = is_stale
+
+    def get_json_schema(self) -> dict[str, Any]:
+        return {"name": self.name, "description": self.description, "parameters": self.params}
+
+    def execute_tool(self, params: dict[str, Any]):
+        return self.execute(params)
+
+    def execute(self, params: dict[str, Any]):
+        from agent.tools.base_tool import ToolResult
+
+        if self.is_stale():
+            return ToolResult.fail({"success": False, "message": "This agent turn is stale."})
+        content = self.memory_manager.get(str(params.get("path") or ""))
+        return ToolResult.success(content) if content else ToolResult.fail("Memory item not found.")
+
+
+class CrmMemoryDraftTool:
+    name = "memory_remember"
+    description = (
+        "Save a candidate CRM memory from this turn. This only creates a draft; "
+        "the backend commits it if this is still the latest conversation turn."
+    )
+    params = {
+        "type": "object",
+        "properties": {
+            "scope": {"type": "string", "enum": ["customer", "conversation"]},
+            "kind": {"type": "string", "description": "preference, fact, decision, issue, or note."},
+            "content": {"type": "string", "description": "Short durable memory content."},
+            "confidence": {"type": "number", "default": 0.7},
+        },
+        "required": ["scope", "content"],
+    }
+
+    def __init__(self, memory_manager: CrmTurnMemoryManager, is_stale: Callable[[], bool]) -> None:
+        _ensure_extern_agent_runtime()
+        from agent.tools.base_tool import ToolStage
+
+        self.stage = ToolStage.PRE_PROCESS
+        self.memory_manager = memory_manager
+        self.is_stale = is_stale
+
+    def get_json_schema(self) -> dict[str, Any]:
+        return {"name": self.name, "description": self.description, "parameters": self.params}
+
+    def execute_tool(self, params: dict[str, Any]):
+        return self.execute(params)
+
+    def execute(self, params: dict[str, Any]):
+        from agent.tools.base_tool import ToolResult
+
+        if self.is_stale():
+            return ToolResult.fail({"success": False, "message": "This agent turn is stale."})
+        self.memory_manager.remember(params)
+        return ToolResult.success({"success": True, "message": "Memory draft captured."})
+
+
 class CrmExternAgentAdapter:
     """Runs one disposable extern_agent instance for a CRM conversation turn."""
 
@@ -262,6 +483,8 @@ class CrmExternAgentAdapter:
         config: SupportAgentConfig,
         registry: SupportToolRegistry,
         knowledge_entries: list[KnowledgeEntry],
+        memory_identity: CrmMemoryIdentity,
+        memory_snapshot: dict[str, Any],
         is_stale: Callable[[], bool],
         cancel_event: Event | None,
     ) -> tuple[str, dict[str, Any], list[dict[str, Any]]]:
@@ -274,6 +497,8 @@ class CrmExternAgentAdapter:
             config,
             registry,
             knowledge_entries,
+            memory_identity,
+            memory_snapshot,
             loop,
             is_stale,
             cancel_event,
@@ -287,6 +512,8 @@ class CrmExternAgentAdapter:
         config: SupportAgentConfig,
         registry: SupportToolRegistry,
         knowledge_entries: list[KnowledgeEntry],
+        memory_identity: CrmMemoryIdentity,
+        memory_snapshot: dict[str, Any],
         loop: asyncio.AbstractEventLoop,
         is_stale: Callable[[], bool],
         cancel_event: Event | None,
@@ -297,8 +524,12 @@ class CrmExternAgentAdapter:
         if is_stale():
             return "", {"provider": "extern_agent", "status": "superseded", "usage": {}}, []
 
-        tools = self._build_tools(registry, config.allowed_tools, loop, is_stale)
-        system_prompt = self._build_system_prompt(settings, config, knowledge_entries)
+        memory_manager = CrmTurnMemoryManager(identity=memory_identity, snapshot=memory_snapshot)
+        tools = [
+            *self._build_tools(registry, config.allowed_tools, loop, is_stale),
+            *self._build_memory_tools(memory_manager, is_stale),
+        ]
+        system_prompt = self._build_system_prompt(settings, config, knowledge_entries, memory_manager)
         agent = Agent(
             system_prompt=system_prompt,
             description="CRM customer-support agent",
@@ -308,7 +539,7 @@ class CrmExternAgentAdapter:
             max_steps=8,
             enable_skills=False,
             workspace_dir=None,
-            memory_manager=None,
+            memory_manager=memory_manager,
         )
         agent.get_full_system_prompt = lambda skill_filter=None: system_prompt
         agent.messages = self._history_messages(conversation, customer_message)
@@ -317,7 +548,7 @@ class CrmExternAgentAdapter:
 
         def _on_event(event: dict[str, Any]) -> None:
             events.append(event)
-            if is_stale():
+            if is_stale() and cancel_event is not None:
                 cancel_event.set()
 
         try:
@@ -345,6 +576,7 @@ class CrmExternAgentAdapter:
                 "content": str(reply or "").strip(),
                 "usage": getattr(agent, "last_usage", None) or {},
                 "events": self._summarize_events(events),
+                "memoryDrafts": memory_manager.drafts,
             },
             self._tool_calls_from_events(events),
         )
@@ -370,6 +602,17 @@ class CrmExternAgentAdapter:
         ]
 
     @staticmethod
+    def _build_memory_tools(
+        memory_manager: CrmTurnMemoryManager,
+        is_stale: Callable[[], bool],
+    ) -> list[Any]:
+        return [
+            CrmMemorySearchTool(memory_manager, is_stale),
+            CrmMemoryGetTool(memory_manager, is_stale),
+            CrmMemoryDraftTool(memory_manager, is_stale),
+        ]
+
+    @staticmethod
     def _history_messages(conversation: Conversation, customer_message: str) -> list[dict[str, Any]]:
         rows = sorted(conversation.messages, key=lambda item: item.created_at or "")
         if rows and rows[-1].role == "customer" and rows[-1].content == customer_message:
@@ -385,6 +628,7 @@ class CrmExternAgentAdapter:
         settings: Settings,
         config: SupportAgentConfig,
         knowledge_entries: list[KnowledgeEntry],
+        memory_manager: CrmTurnMemoryManager,
     ) -> str:
         knowledge_text = "\n\n".join(
             f"{entry.title}\n{entry.content[:1200]}" for entry in knowledge_entries
@@ -397,11 +641,34 @@ class CrmExternAgentAdapter:
             "Use tools only when they directly help resolve the support case.",
             "Do not approve refunds, legal claims, discounts, or binding commitments.",
             "Escalate sensitive, legal, refund, or low-confidence cases to a human.",
+            "Use memory_search and memory_get when customer preferences, prior decisions, or past context may affect the answer.",
+            "Use memory_remember for durable customer preferences, facts, commitments, unresolved issues, or important conversation state.",
+            "memory_remember only creates a candidate memory; the CRM backend decides whether to commit it.",
+            f"Memory identity: business={memory_manager.identity.business_id}, "
+            f"customer={memory_manager.identity.customer_id or 'unknown'}, "
+            f"conversation={memory_manager.identity.conversation_id}.",
             "Answer with the final customer-facing reply only.",
         ]
+        memory_summary = CrmExternAgentAdapter._memory_snapshot_text(memory_manager.snapshot)
+        if memory_summary:
+            parts.append(f"Approved CRM memory snapshot:\n{memory_summary}")
         if knowledge_text:
             parts.append(f"Knowledge base:\n{knowledge_text}")
         return "\n".join(parts)
+
+    @staticmethod
+    def _memory_snapshot_text(snapshot: dict[str, Any]) -> str:
+        lines: list[str] = []
+        for scope in ("customer", "conversation"):
+            items = list(snapshot.get(scope) or [])[-10:]
+            if not items:
+                continue
+            lines.append(f"{scope.title()} memory:")
+            for item in items:
+                content = str((item or {}).get("content") or "").strip()
+                if content:
+                    lines.append(f"- [{(item or {}).get('kind') or 'note'}] {content[:300]}")
+        return "\n".join(lines)
 
     @staticmethod
     def _summarize_events(events: list[dict[str, Any]]) -> dict[str, Any]:

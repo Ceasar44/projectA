@@ -9,6 +9,7 @@ from app.domain.automation.service import AutomationService
 from app.domain.conversation.schemas import MessageCreate
 from app.domain.conversation.service import ConversationService
 from app.domain.customer_support.agent_channel import AgentTurn, crm_agent_channel
+from app.domain.customer_support.memory import CrmAgentMemoryService
 from app.domain.customer_support.schemas import SupportAgentConfig, SupportAgentResult
 from app.domain.customer_support.tools import SupportToolRegistry, parse_tool_arguments
 from app.domain.tokens.service import TokenService
@@ -212,6 +213,18 @@ class CustomerSupportAgentService:
         if not crm_agent_channel.is_latest(turn):
             return self._superseded_result(conversation.id, intent=intent, sentiment=sentiment)
 
+        memory_drafts = list(ai_response.get("memoryDrafts") or [])
+        committed_memories: list[dict[str, Any]] = []
+        if memory_drafts:
+            if not crm_agent_channel.is_latest(turn):
+                return self._superseded_result(conversation.id, intent=intent, sentiment=sentiment)
+            committed_memories = await CrmAgentMemoryService(self.session).commit_drafts(
+                conversation,
+                memory_drafts,
+                customer_message=customer_message,
+            )
+            ai_response["committedMemoryCount"] = len(committed_memories)
+
         provider_status = str(ai_response.get("status") or "")
         status = "escalated" if approval["required"] else "sent"
         confidence = estimate_confidence(
@@ -284,6 +297,7 @@ class CustomerSupportAgentService:
             "automationMatches": automation_matches,
             "toolCallCount": len(tool_calls),
             "sources": sources,
+            "agentMemoryCount": len(committed_memories),
         }
 
         await self.session.commit()
@@ -368,6 +382,7 @@ class CustomerSupportAgentService:
         turn: AgentTurn | None = None,
     ) -> tuple[str, dict[str, Any], list[dict[str, Any]]]:
         if (settings.ai_provider or "").lower() == "extern_agent":
+            memory_service = CrmAgentMemoryService(self.session)
             reply, ai_response, tool_calls = await CrmExternAgentAdapter().reply(
                 settings=settings,
                 conversation=conversation,
@@ -375,6 +390,8 @@ class CustomerSupportAgentService:
                 config=config,
                 registry=registry,
                 knowledge_entries=knowledge_entries,
+                memory_identity=memory_service.build_identity(settings, conversation),
+                memory_snapshot=memory_service.build_snapshot(conversation),
                 is_stale=lambda: turn is not None and not crm_agent_channel.is_latest(turn),
                 cancel_event=crm_agent_channel.cancel_event(turn) if turn is not None else None,
             )
