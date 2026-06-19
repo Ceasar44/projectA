@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 from app.domain.automation.service import AutomationService
 from app.domain.conversation.schemas import MessageCreate
 from app.domain.conversation.service import ConversationService
+from app.domain.customer_support.agent_channel import AgentTurn, crm_agent_channel
 from app.domain.customer_support.schemas import SupportAgentConfig, SupportAgentResult
 from app.domain.customer_support.tools import SupportToolRegistry, parse_tool_arguments
 from app.domain.tokens.service import TokenService
@@ -20,6 +21,7 @@ from app.infrastructure.db.repositories.customers import CustomerRepository
 from app.infrastructure.db.repositories.settings import SettingsRepository
 from app.infrastructure.db.unit_of_work import SQLAlchemyUnitOfWork
 from app.infrastructure.integrations.ai import OpenAIProvider
+from app.infrastructure.integrations.extern_agent_adapter import CrmExternAgentAdapter
 
 
 DEFAULT_ALLOWED_TOOLS = [
@@ -145,6 +147,36 @@ class CustomerSupportAgentService:
         if not config.allowed_tools:
             config.allowed_tools = list(DEFAULT_ALLOWED_TOOLS)
 
+        turn = crm_agent_channel.begin_turn(conversation.id)
+        result = await crm_agent_channel.run_latest(
+            turn,
+            lambda: self._reply_to_latest_turn(
+                conversation_id=conversation.id,
+                customer_message=customer_message,
+                settings=settings,
+                config=config,
+                source=source,
+                write_auto_reply_log=write_auto_reply_log,
+                turn=turn,
+            ),
+        )
+        return result or self._superseded_result(conversation.id)
+
+    async def _reply_to_latest_turn(
+        self,
+        *,
+        conversation_id: str,
+        customer_message: str,
+        settings: Settings,
+        config: SupportAgentConfig,
+        source: str,
+        write_auto_reply_log: bool,
+        turn: AgentTurn,
+    ) -> SupportAgentResult:
+        conversation = await self._load_conversation(conversation_id)
+        if not conversation:
+            return self._superseded_result(conversation_id, reason="conversation_not_found")
+
         sentiment = analyze_sentiment(customer_message)
         intent = detect_intent(customer_message)
         approval = requires_human_approval(customer_message, config.escalation_keywords)
@@ -156,8 +188,11 @@ class CustomerSupportAgentService:
         registry = SupportToolRegistry(self.session, conversation, knowledge_entries)
         tool_calls: list[dict[str, Any]] = []
 
-        if not approval["required"]:
+        if not approval["required"] and crm_agent_channel.is_latest(turn):
             tool_calls.extend(await self._run_heuristic_tools(registry, customer_message, intent, config.allowed_tools))
+
+        if not crm_agent_channel.is_latest(turn):
+            return self._superseded_result(conversation.id, intent=intent, sentiment=sentiment)
 
         if approval["required"]:
             reply = self._handoff_reply(settings, escalation_reason)
@@ -170,8 +205,12 @@ class CustomerSupportAgentService:
                 config,
                 registry,
                 knowledge_entries,
+                turn=turn,
             )
             tool_calls.extend(model_tool_calls)
+
+        if not crm_agent_channel.is_latest(turn):
+            return self._superseded_result(conversation.id, intent=intent, sentiment=sentiment)
 
         provider_status = str(ai_response.get("status") or "")
         status = "escalated" if approval["required"] else "sent"
@@ -274,6 +313,25 @@ class CustomerSupportAgentService:
             automation_matches=automation_matches,
         )
 
+    @staticmethod
+    def _superseded_result(
+        conversation_id: str,
+        *,
+        intent: str = "superseded",
+        sentiment: str = "neutral",
+        reason: str = "superseded_by_newer_message",
+    ) -> SupportAgentResult:
+        return SupportAgentResult(
+            conversation_id=conversation_id,
+            reply="",
+            status="superseded",
+            confidence=0.0,
+            intent=intent,
+            sentiment=sentiment,
+            escalation_reason=reason,
+            provider_status="superseded",
+        )
+
     async def get_active_auto_reply_config(self, conversation: Conversation) -> SupportAgentConfig | None:
         global_config = await self.session.scalar(
             select(AiCustomerServiceConfig).where(AiCustomerServiceConfig.scope == "global")
@@ -307,7 +365,22 @@ class CustomerSupportAgentService:
         config: SupportAgentConfig,
         registry: SupportToolRegistry,
         knowledge_entries: list[KnowledgeEntry],
+        turn: AgentTurn | None = None,
     ) -> tuple[str, dict[str, Any], list[dict[str, Any]]]:
+        if (settings.ai_provider or "").lower() == "extern_agent":
+            reply, ai_response, tool_calls = await CrmExternAgentAdapter().reply(
+                settings=settings,
+                conversation=conversation,
+                customer_message=customer_message,
+                config=config,
+                registry=registry,
+                knowledge_entries=knowledge_entries,
+                is_stale=lambda: turn is not None and not crm_agent_channel.is_latest(turn),
+            )
+            if not reply and ai_response.get("status") != "superseded":
+                reply = self._fallback_reply(settings, customer_message, knowledge_entries, tool_calls)
+            return reply, ai_response, tool_calls
+
         provider = OpenAIProvider(
             api_key=settings.ai_api_key or None,
             model=settings.ai_model,
@@ -327,6 +400,8 @@ class CustomerSupportAgentService:
             )
 
         for _ in range(5):
+            if turn is not None and not crm_agent_channel.is_latest(turn):
+                return "", {"status": "superseded", "usage": {}, "toolCalls": []}, all_tool_calls
             tool_calls = ai_response.get("toolCalls") or []
             if not tool_calls:
                 break
@@ -338,6 +413,8 @@ class CustomerSupportAgentService:
                 }
             )
             for tool_call in tool_calls:
+                if turn is not None and not crm_agent_channel.is_latest(turn):
+                    return "", {"status": "superseded", "usage": {}, "toolCalls": []}, all_tool_calls
                 tool_name = ((tool_call or {}).get("function") or {}).get("name", "")
                 arguments = parse_tool_arguments(((tool_call or {}).get("function") or {}).get("arguments"))
                 result = await registry.execute(tool_name, arguments, config.allowed_tools)

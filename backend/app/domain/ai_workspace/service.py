@@ -638,6 +638,8 @@ class AIWorkspaceService:
             write_auto_reply_log=True,
         )
 
+        if result.status == "superseded":
+            return None
         if result.status == "escalated":
             return {"status": "escalated", "reason": result.escalation_reason}
         return {
