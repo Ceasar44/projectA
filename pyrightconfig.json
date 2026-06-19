@@ -1,0 +1,25 @@
+{
+  "venvPath": "backend",
+  "venv": ".venv",
+  "include": [
+    "backend/app",
+    "backend/tests",
+    "src"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "backend/.venv",
+    "frontend/node_modules"
+  ],
+  "executionEnvironments": [
+    {
+      "root": "backend",
+      "extraPaths": [
+        "backend"
+      ]
+    },
+    {
+      "root": "src"
+    }
+  ]
+}

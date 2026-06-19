@@ -131,7 +131,7 @@
 推荐启动方式：
 
 ```powershell
-cd D:\test\project2\owly\backend
+cd "D:\projects\product_0.1\RevenueDesk AI\backend"
 python -m venv .venv
 .venv\Scripts\activate
 pip install -e .[dev]
@@ -149,7 +149,7 @@ uvicorn app.main:app --reload --port 8000
 推荐启动方式：
 
 ```powershell
-cd D:\test\project2\owly\frontend
+cd "D:\projects\product_0.1\RevenueDesk AI\frontend"
 npm install
 npm run dev
 ```
@@ -582,7 +582,7 @@ AUTO_CREATE_SCHEMA=false
 ### 13.2 当前测试运行方式
 
 ```powershell
-D:\test\project2\owly\backend\.venv\Scripts\python.exe -m pytest D:\test\project2\owly\backend\tests\test_api_contracts.py -q
+"D:\projects\product_0.1\RevenueDesk AI\backend\.venv\Scripts\python.exe" -m pytest "D:\projects\product_0.1\RevenueDesk AI\backend\tests\test_api_contracts.py" -q
 ```
 
 在写这份文档时，这套测试是通过的。
