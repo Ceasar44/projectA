@@ -11,6 +11,10 @@ from threading import Event
 from typing import TYPE_CHECKING, Any
 
 from app.domain.customer_support.memory import CrmMemoryIdentity
+from app.domain.customer_support.prompt_builder import (
+    CustomerSupportPromptContext,
+    build_customer_support_prompt,
+)
 from app.infrastructure.db.models.conversations import Conversation
 from app.infrastructure.db.models.knowledge import KnowledgeEntry
 from app.infrastructure.db.models.operations import Settings
@@ -529,7 +533,14 @@ class CrmExternAgentAdapter:
             *self._build_tools(registry, config.allowed_tools, loop, is_stale),
             *self._build_memory_tools(memory_manager, is_stale),
         ]
-        system_prompt = self._build_system_prompt(settings, config, knowledge_entries, memory_manager)
+        system_prompt = self._build_system_prompt(
+            settings,
+            config,
+            knowledge_entries,
+            memory_manager,
+            tools,
+            conversation,
+        )
         agent = Agent(
             system_prompt=system_prompt,
             description="CRM customer-support agent",
@@ -629,46 +640,26 @@ class CrmExternAgentAdapter:
         config: SupportAgentConfig,
         knowledge_entries: list[KnowledgeEntry],
         memory_manager: CrmTurnMemoryManager,
+        tools: list[Any] | None = None,
+        conversation: Conversation | None = None,
     ) -> str:
-        knowledge_text = "\n\n".join(
-            f"{entry.title}\n{entry.content[:1200]}" for entry in knowledge_entries
+        return build_customer_support_prompt(
+            CustomerSupportPromptContext(
+                settings=settings,
+                config=config,
+                knowledge_entries=knowledge_entries,
+                memory_identity=memory_manager.identity,
+                memory_snapshot=memory_manager.snapshot,
+                tools=tools or [],
+                runtime_info={
+                    "model": settings.ai_model,
+                    "channel": conversation.channel if conversation else None,
+                    "conversation_id": (
+                        conversation.id if conversation else memory_manager.identity.conversation_id
+                    ),
+                },
+            )
         )
-        parts = [
-            f"You are the AI customer support assistant for {settings.business_name}.",
-            f"Business description: {settings.business_desc or 'Not provided.'}",
-            f"Tone: {config.tone or settings.tone}. Reply style: {config.reply_style}.",
-            f"Language: {settings.language}. Sales focus enabled: {config.sales_focus}.",
-            "Use tools only when they directly help resolve the support case.",
-            "Do not approve refunds, legal claims, discounts, or binding commitments.",
-            "Escalate sensitive, legal, refund, or low-confidence cases to a human.",
-            "Use memory_search and memory_get when customer preferences, prior decisions, or past context may affect the answer.",
-            "Use memory_remember for durable customer preferences, facts, commitments, unresolved issues, or important conversation state.",
-            "memory_remember only creates a candidate memory; the CRM backend decides whether to commit it.",
-            f"Memory identity: business={memory_manager.identity.business_id}, "
-            f"customer={memory_manager.identity.customer_id or 'unknown'}, "
-            f"conversation={memory_manager.identity.conversation_id}.",
-            "Answer with the final customer-facing reply only.",
-        ]
-        memory_summary = CrmExternAgentAdapter._memory_snapshot_text(memory_manager.snapshot)
-        if memory_summary:
-            parts.append(f"Approved CRM memory snapshot:\n{memory_summary}")
-        if knowledge_text:
-            parts.append(f"Knowledge base:\n{knowledge_text}")
-        return "\n".join(parts)
-
-    @staticmethod
-    def _memory_snapshot_text(snapshot: dict[str, Any]) -> str:
-        lines: list[str] = []
-        for scope in ("customer", "conversation"):
-            items = list(snapshot.get(scope) or [])[-10:]
-            if not items:
-                continue
-            lines.append(f"{scope.title()} memory:")
-            for item in items:
-                content = str((item or {}).get("content") or "").strip()
-                if content:
-                    lines.append(f"- [{(item or {}).get('kind') or 'note'}] {content[:300]}")
-        return "\n".join(lines)
 
     @staticmethod
     def _summarize_events(events: list[dict[str, Any]]) -> dict[str, Any]:
