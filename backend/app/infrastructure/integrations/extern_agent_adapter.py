@@ -263,6 +263,7 @@ class CrmExternAgentAdapter:
         registry: SupportToolRegistry,
         knowledge_entries: list[KnowledgeEntry],
         is_stale: Callable[[], bool],
+        cancel_event: Event | None,
     ) -> tuple[str, dict[str, Any], list[dict[str, Any]]]:
         loop = asyncio.get_running_loop()
         return await asyncio.to_thread(
@@ -275,6 +276,7 @@ class CrmExternAgentAdapter:
             knowledge_entries,
             loop,
             is_stale,
+            cancel_event,
         )
 
     def _reply_sync(
@@ -287,6 +289,7 @@ class CrmExternAgentAdapter:
         knowledge_entries: list[KnowledgeEntry],
         loop: asyncio.AbstractEventLoop,
         is_stale: Callable[[], bool],
+        cancel_event: Event | None,
     ) -> tuple[str, dict[str, Any], list[dict[str, Any]]]:
         _ensure_extern_agent_runtime()
         from agent.protocol import Agent
@@ -296,7 +299,6 @@ class CrmExternAgentAdapter:
 
         tools = self._build_tools(registry, config.allowed_tools, loop, is_stale)
         system_prompt = self._build_system_prompt(settings, config, knowledge_entries)
-        cancel_event = Event()
         agent = Agent(
             system_prompt=system_prompt,
             description="CRM customer-support agent",

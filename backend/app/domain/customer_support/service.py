@@ -376,6 +376,7 @@ class CustomerSupportAgentService:
                 registry=registry,
                 knowledge_entries=knowledge_entries,
                 is_stale=lambda: turn is not None and not crm_agent_channel.is_latest(turn),
+                cancel_event=crm_agent_channel.cancel_event(turn) if turn is not None else None,
             )
             if not reply and ai_response.get("status") != "superseded":
                 reply = self._fallback_reply(settings, customer_message, knowledge_entries, tool_calls)
