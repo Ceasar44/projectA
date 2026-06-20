@@ -3,9 +3,9 @@ import importlib.util
 import threading
 from pathlib import Path
 from typing import Dict, Any, Type
-from agent.tools.base_tool import BaseTool
-from common.log import logger
-from config import conf
+from extern_agent.agent.tools.base_tool import BaseTool
+from extern_agent.common.log import logger
+from extern_agent.config import conf
 
 
 def _normalize_mcp_configs(raw) -> list:
@@ -95,7 +95,7 @@ class ToolManager:
         """
         try:
             # Try to import the tools package
-            tools_package = importlib.import_module("agent.tools")
+            tools_package = importlib.import_module("extern_agent.agent.tools")
 
             # Check if __all__ is defined
             if hasattr(tools_package, "__all__"):
@@ -450,8 +450,8 @@ class ToolManager:
         the others, and never raises out of the worker thread.
         """
         try:
-            from agent.tools.mcp.mcp_client import McpClient, McpClientRegistry
-            from agent.tools.mcp.mcp_tool import McpTool
+            from extern_agent.agent.tools.mcp.mcp_client import McpClient, McpClientRegistry
+            from extern_agent.agent.tools.mcp.mcp_tool import McpTool
 
             registry = McpClientRegistry()
             self._mcp_registry = registry
@@ -523,7 +523,7 @@ class ToolManager:
         if agent is None or not hasattr(agent, "tools"):
             return ([], [])
 
-        from agent.tools.mcp.mcp_tool import McpTool
+        from extern_agent.agent.tools.mcp.mcp_tool import McpTool
         current = self._mcp_tool_instances
         registry_names = set(current.keys())
 

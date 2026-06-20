@@ -6,9 +6,9 @@ Edit files through exact text replacement
 import os
 from typing import Dict, Any
 
-from agent.tools.base_tool import BaseTool, ToolResult
-from common.utils import expand_path
-from agent.tools.utils.diff import (
+from extern_agent.agent.tools.base_tool import BaseTool, ToolResult
+from extern_agent.common.utils import expand_path
+from extern_agent.agent.tools.utils.diff import (
     strip_bom,
     detect_line_ending,
     normalize_to_lf,

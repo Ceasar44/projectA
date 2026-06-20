@@ -11,15 +11,15 @@ from wechatpy.enterprise.crypto import WeChatCrypto
 from wechatpy.enterprise.exceptions import InvalidCorpIdException
 from wechatpy.exceptions import InvalidSignatureException, WeChatClientException
 
-from bridge.context import Context
-from bridge.reply import Reply, ReplyType
-from channel.chat_channel import ChatChannel
-from channel.wechatcom.wechatcomapp_client import WechatComAppClient
-from channel.wechatcom.wechatcomapp_message import WechatComAppMessage
-from common.log import logger
-from common.singleton import singleton
-from common.utils import compress_imgfile, fsize, split_string_by_utf8_length, convert_webp_to_png, remove_markdown_symbol
-from config import conf, subscribe_msg
+from extern_agent.bridge.context import Context
+from extern_agent.bridge.reply import Reply, ReplyType
+from extern_agent.channel.chat_channel import ChatChannel
+from extern_agent.channel.wechatcom.wechatcomapp_client import WechatComAppClient
+from extern_agent.channel.wechatcom.wechatcomapp_message import WechatComAppMessage
+from extern_agent.common.log import logger
+from extern_agent.common.singleton import singleton
+from extern_agent.common.utils import compress_imgfile, fsize, split_string_by_utf8_length, convert_webp_to_png, remove_markdown_symbol
+from extern_agent.config import conf, subscribe_msg
 from voice.audio_convert import any_to_amr, split_audio
 
 MAX_UTF8_LEN = 2048

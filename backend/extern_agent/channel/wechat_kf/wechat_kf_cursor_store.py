@@ -20,7 +20,7 @@ import os
 import threading
 from typing import Optional
 
-from common.log import logger
+from extern_agent.common.log import logger
 
 
 class CursorStore:

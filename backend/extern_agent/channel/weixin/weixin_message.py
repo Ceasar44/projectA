@@ -7,12 +7,12 @@ Parses WeixinMessage from the getUpdates API into the unified ChatMessage format
 import os
 import uuid
 
-from bridge.context import ContextType
-from channel.chat_message import ChatMessage
-from channel.weixin.weixin_api import download_media_from_cdn, CDN_BASE_URL
-from common.log import logger
-from common.utils import expand_path
-from config import conf
+from extern_agent.bridge.context import ContextType
+from extern_agent.channel.chat_message import ChatMessage
+from extern_agent.channel.weixin.weixin_api import download_media_from_cdn, CDN_BASE_URL
+from extern_agent.common.log import logger
+from extern_agent.common.utils import expand_path
+from extern_agent.config import conf
 
 
 # MessageItemType constants from the Weixin protocol

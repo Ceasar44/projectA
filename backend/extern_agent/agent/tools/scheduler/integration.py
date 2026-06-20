@@ -5,11 +5,11 @@ Integration module for scheduler with AgentBridge
 import os
 import threading
 from typing import Optional
-from config import conf
-from common.log import logger
-from common.utils import expand_path
-from bridge.context import Context, ContextType
-from bridge.reply import Reply, ReplyType
+from extern_agent.config import conf
+from extern_agent.common.log import logger
+from extern_agent.common.utils import expand_path
+from extern_agent.bridge.context import Context, ContextType
+from extern_agent.bridge.reply import Reply, ReplyType
 
 # Global scheduler service instance
 _scheduler_service = None
@@ -45,8 +45,8 @@ def init_scheduler(agent_bridge) -> bool:
             return True
 
         try:
-            from agent.tools.scheduler.task_store import TaskStore
-            from agent.tools.scheduler.scheduler_service import SchedulerService
+            from extern_agent.agent.tools.scheduler.task_store import TaskStore
+            from extern_agent.agent.tools.scheduler.scheduler_service import SchedulerService
 
             # Get workspace from config
             workspace_root = expand_path(conf().get("agent_workspace", "~/cow"))
@@ -113,7 +113,7 @@ def _is_channel_ready(channel_type: str, receiver: str) -> bool:
     if not channel_type or channel_type == "unknown":
         return True
     try:
-        from channel.channel_factory import create_channel
+        from extern_agent.channel.channel_factory import create_channel
         channel = create_channel(channel_type)
         if channel is None:
             return False
@@ -255,7 +255,7 @@ def _execute_agent_task(task: dict, agent_bridge) -> bool:
                 logger.error(f"[Scheduler] Task {task['id']}: No result from agent execution")
                 return True  # agent ran but produced nothing; don't loop
 
-            from channel.channel_factory import create_channel
+            from extern_agent.channel.channel_factory import create_channel
             channel = create_channel(channel_type)
             if not channel:
                 logger.error(f"[Scheduler] Failed to create channel: {channel_type}")
@@ -343,7 +343,7 @@ def _execute_send_message(task: dict, agent_bridge) -> bool:
         reply = Reply(ReplyType.TEXT, content)
         
         # Get channel and send
-        from channel.channel_factory import create_channel
+        from extern_agent.channel.channel_factory import create_channel
         
         channel = create_channel(channel_type)
         if not channel:
@@ -388,7 +388,7 @@ def _execute_tool_call(task: dict, agent_bridge) -> bool:
             logger.error(f"[Scheduler] Task {task['id']}: No receiver specified")
             return True
 
-        from agent.tools.tool_manager import ToolManager
+        from extern_agent.agent.tools.tool_manager import ToolManager
         tool = ToolManager().create_tool(tool_name)
         if not tool:
             logger.error(f"[Scheduler] Task {task['id']}: Tool '{tool_name}' not found")
@@ -418,7 +418,7 @@ def _execute_tool_call(task: dict, agent_bridge) -> bool:
 
         reply = Reply(ReplyType.TEXT, content)
 
-        from channel.channel_factory import create_channel
+        from extern_agent.channel.channel_factory import create_channel
         channel = create_channel(channel_type)
         if not channel:
             logger.error(f"[Scheduler] Failed to create channel: {channel_type}")
@@ -500,7 +500,7 @@ def _execute_skill_call(task: dict, agent_bridge) -> bool:
         if result_prefix:
             content = f"{result_prefix}\n\n{content}"
 
-        from channel.channel_factory import create_channel
+        from extern_agent.channel.channel_factory import create_channel
         channel = create_channel(channel_type)
         if not channel:
             logger.error(f"[Scheduler] Failed to create channel: {channel_type}")

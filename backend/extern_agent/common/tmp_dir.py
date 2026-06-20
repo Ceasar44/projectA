@@ -1,7 +1,7 @@
 import os
 import pathlib
 
-from config import conf
+from extern_agent.config import conf
 
 
 class TmpDir(object):

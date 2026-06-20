@@ -5,16 +5,16 @@ Agent Bridge - Integrates Agent system with existing COW bridge
 import os
 from typing import Optional, List
 
-from agent.protocol import Agent, LLMModel, LLMRequest, get_cancel_registry
-from bridge.agent_event_handler import AgentEventHandler
-from bridge.agent_initializer import AgentInitializer
-from bridge.bridge import Bridge
-from bridge.context import Context
-from bridge.reply import Reply, ReplyType
-from common import const
-from common.log import logger
-from common.utils import expand_path
-from config import conf
+from extern_agent.agent.protocol import Agent, LLMModel, LLMRequest, get_cancel_registry
+from extern_agent.bridge.agent_event_handler import AgentEventHandler
+from extern_agent.bridge.agent_initializer import AgentInitializer
+from extern_agent.bridge.bridge import Bridge
+from extern_agent.bridge.context import Context
+from extern_agent.bridge.reply import Reply, ReplyType
+from extern_agent.common import const
+from extern_agent.common.log import logger
+from extern_agent.common.utils import expand_path
+from extern_agent.config import conf
 from models.openai_compatible_bot import OpenAICompatibleBot
 
 
@@ -41,7 +41,7 @@ def add_openai_compatible_support(bot_instance):
             Infer API config from common configuration patterns.
             Most OpenAI-compatible bots use similar configuration.
             """
-            from config import conf
+            from extern_agent.config import conf
 
             return {
                 'api_key': conf().get("open_ai_api_key"),
@@ -172,7 +172,7 @@ class AgentLLMModel(LLMModel):
                 # IM channels (WeChat/WeCom/DingTalk/Feishu) won't render the
                 # reasoning trace, but still benefit from the higher answer
                 # quality the thinking pass produces.
-                from config import conf
+                from extern_agent.config import conf
                 thinking_enabled = bool(conf().get("enable_thinking", False))
                 kwargs['thinking'] = (
                     {"type": "enabled"} if thinking_enabled
@@ -234,7 +234,7 @@ class AgentLLMModel(LLMModel):
                 # IM channels (WeChat/WeCom/DingTalk/Feishu) won't render the
                 # reasoning trace, but still benefit from the higher answer
                 # quality the thinking pass produces.
-                from config import conf
+                from extern_agent.config import conf
                 thinking_enabled = bool(conf().get("enable_thinking", False))
                 kwargs['thinking'] = (
                     {"type": "enabled"} if thinking_enabled
@@ -290,7 +290,7 @@ class AgentBridge:
         # Eager-start the scheduler so cron tasks fire without waiting
         # for the first user message. init_scheduler is idempotent.
         try:
-            from agent.tools.scheduler.integration import init_scheduler
+            from extern_agent.agent.tools.scheduler.integration import init_scheduler
             if init_scheduler(self):
                 self.scheduler_initialized = True
         except Exception as e:
@@ -298,7 +298,7 @@ class AgentBridge:
 
         # Start the self-evolution idle trigger (idempotent, daemon thread).
         try:
-            from agent.evolution.trigger import start_evolution_trigger
+            from extern_agent.agent.evolution.trigger import start_evolution_trigger
             start_evolution_trigger(self)
         except Exception as e:
             logger.warning(f"[AgentBridge] Evolution trigger init failed: {e}")
@@ -321,7 +321,7 @@ class AgentBridge:
         # Default tools if none provided
         if tools is None:
             # Use ToolManager to load all available tools
-            from agent.tools import ToolManager
+            from extern_agent.agent.tools import ToolManager
             tool_manager = ToolManager()
             tool_manager.load_tools()
             
@@ -411,7 +411,7 @@ class AgentBridge:
         if not (hasattr(agent, "messages") and hasattr(agent, "messages_lock")):
             return -1
         try:
-            from agent.memory import get_conversation_store
+            from extern_agent.agent.memory import get_conversation_store
             store = get_conversation_store()
             # No turn cap here: we want a faithful mirror of what the store
             # has for this session after deletion.
@@ -489,7 +489,7 @@ class AgentBridge:
                     for tool in agent.tools:
                         if tool.name == "scheduler":
                             try:
-                                from agent.tools.scheduler.integration import attach_scheduler_to_tool
+                                from extern_agent.agent.tools.scheduler.integration import attach_scheduler_to_tool
                                 attach_scheduler_to_tool(tool, context)
                             except Exception as e:
                                 logger.warning(f"[AgentBridge] Failed to attach context to scheduler: {e}")
@@ -509,7 +509,7 @@ class AgentBridge:
             # blow up prompt cost. Regular user chats are not touched here —
             # the agent's own context manager handles that path.
             if session_id and session_id.startswith("scheduler_"):
-                from config import conf
+                from extern_agent.config import conf
                 scheduler_keep_turns = max(
                     1, int(conf().get("agent_max_context_turns", 20)) // 5
                 )
@@ -549,7 +549,7 @@ class AgentBridge:
                         msg_count = len(agent.messages)
                     if msg_count == 0:
                         try:
-                            from agent.memory import get_conversation_store
+                            from extern_agent.agent.memory import get_conversation_store
                             get_conversation_store().clear_session(session_id)
                             logger.info(f"[AgentBridge] Cleared DB for recovered session: {session_id}")
                         except Exception as e:
@@ -562,7 +562,7 @@ class AgentBridge:
                 context and context.get("is_scheduled_task")
             ):
                 try:
-                    from agent.evolution.trigger import note_user_turn
+                    from extern_agent.agent.evolution.trigger import note_user_turn
                     ch = (context.get("channel_type") or "") if context else ""
                     rcv = (context.get("receiver") or "") if context else ""
                     is_group = bool(context.get("isgroup")) if context else False
@@ -603,7 +603,7 @@ class AgentBridge:
                     with agent.messages_lock:
                         msg_count = len(agent.messages)
                     if msg_count == 0:
-                        from agent.memory import get_conversation_store
+                        from extern_agent.agent.memory import get_conversation_store
                         get_conversation_store().clear_session(session_id)
                         logger.info(f"[AgentBridge] Cleared DB for session after error: {session_id}")
                 except Exception as db_err:
@@ -624,7 +624,7 @@ class AgentBridge:
         Failures are isolated and never raise into the message pipeline.
         """
         import threading
-        from agent.tools import ToolManager
+        from extern_agent.agent.tools import ToolManager
 
         def _run():
             try:
@@ -695,7 +695,7 @@ class AgentBridge:
         Args:
             workspace_root: Workspace directory path (not used, kept for compatibility)
         """
-        from config import conf
+        from extern_agent.config import conf
         import os
         
         key_mapping = {
@@ -768,7 +768,7 @@ class AgentBridge:
         if not new_messages:
             return
         try:
-            from config import conf
+            from extern_agent.config import conf
             if not conf().get("conversation_persistence", True):
                 return
             # When deep-thinking display is disabled, strip "thinking" content
@@ -784,7 +784,7 @@ class AgentBridge:
             messages_to_store = self._strip_thinking_blocks(new_messages)
 
         try:
-            from agent.memory import get_conversation_store
+            from extern_agent.agent.memory import get_conversation_store
             get_conversation_store().append_messages(
                 session_id, messages_to_store, channel_type=channel_type
             )
@@ -824,7 +824,7 @@ class AgentBridge:
         Content is truncated to 2000 chars to prevent a single high-volume task
         from bloating one entry.
         """
-        from config import conf
+        from extern_agent.config import conf
         if not conf().get("scheduler_inject_to_session", True):
             return
         if not session_id or not content:
@@ -849,7 +849,7 @@ class AgentBridge:
 
         keep_last_n = max(int(conf().get("scheduler_inject_max_per_session", 3) or 0), 0)
         try:
-            from agent.memory import get_conversation_store
+            from extern_agent.agent.memory import get_conversation_store
             deleted = get_conversation_store().prune_scheduled_messages(
                 session_id, keep_last_n=keep_last_n
             )
@@ -1037,7 +1037,7 @@ class AgentBridge:
         """
         import os
         from dotenv import load_dotenv
-        from config import conf
+        from extern_agent.config import conf
 
         # Reload environment variables from .env file
         workspace_root = expand_path(conf().get("agent_workspace", "~/cow"))
@@ -1079,7 +1079,7 @@ class AgentBridge:
         LINKAI_API_KEY is set.
         """
         try:
-            from agent.tools.web_search.web_search import WebSearch
+            from extern_agent.agent.tools.web_search.web_search import WebSearch
 
             has_tool = any(t.name == "web_search" for t in agent.tools)
             available = WebSearch.is_available()

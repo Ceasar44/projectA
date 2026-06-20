@@ -3,7 +3,7 @@ Skill formatter for generating prompts from skills.
 """
 
 from typing import Dict, List
-from agent.skills.types import Skill, SkillEntry
+from extern_agent.agent.skills.types import Skill, SkillEntry
 
 
 def format_skills_for_prompt(skills: List[Skill]) -> str:

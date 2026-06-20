@@ -8,7 +8,7 @@ Public API:
   detect_index_dim, cleanup_legacy_state_file
 """
 
-from agent.memory.embedding.provider import (
+from extern_agent.agent.memory.embedding.provider import (
     EMBEDDING_VENDORS,
     DoubaoEmbeddingProvider,
     EmbeddingCache,
@@ -16,12 +16,12 @@ from agent.memory.embedding.provider import (
     OpenAIEmbeddingProvider,
     create_embedding_provider,
 )
-from agent.memory.embedding.rebuild import (
+from extern_agent.agent.memory.embedding.rebuild import (
     RebuildResult,
     clear_index,
     rebuild_in_process,
 )
-from agent.memory.embedding.state import (
+from extern_agent.agent.memory.embedding.state import (
     cleanup_legacy_state_file,
     detect_index_dim,
 )

@@ -104,7 +104,7 @@ class MemoryStorage:
             # Check FTS5 support
             self.fts5_available = self._check_fts5_support()
             if not _HAS_UPSERT:
-                from common.log import logger
+                from extern_agent.common.log import logger
                 logger.warning(
                     "[MemoryStorage] SQLite %s < 3.24 — UPSERT unavailable. "
                     "Falling back to INSERT OR REPLACE; FTS5 rowid may drift on "
@@ -112,7 +112,7 @@ class MemoryStorage:
                     sqlite3.sqlite_version,
                 )
             if not self.fts5_available:
-                from common.log import logger
+                from extern_agent.common.log import logger
                 logger.debug("[MemoryStorage] FTS5 not available, using LIKE-based keyword search")
             
             # Check database integrity
@@ -193,7 +193,7 @@ class MemoryStorage:
         # will fail with "no such table: chunks_fts".
         if self.fts5_available:
             if self._fts5_state_inconsistent():
-                from common.log import logger
+                from extern_agent.common.log import logger
                 logger.warning(
                     "[MemoryStorage] FTS5 state inconsistent (triggers/table mismatch). "
                     "Resetting chunks_fts to recover."
@@ -211,7 +211,7 @@ class MemoryStorage:
             # We rebuild from the chunks table when that happens; data isn't
             # lost because chunks (the content table) is the source of truth.
             if self._fts5_shadow_corrupt():
-                from common.log import logger
+                from extern_agent.common.log import logger
                 logger.warning(
                     "[MemoryStorage] FTS5 shadow tables corrupt; rebuilding from chunks."
                 )
@@ -282,7 +282,7 @@ class MemoryStorage:
                     )
                 self.trigram_fts5_available = True
             except Exception:
-                from common.log import logger
+                from extern_agent.common.log import logger
                 logger.warning("[MemoryStorage] trigram FTS5 unavailable, CJK search will use LIKE fallback", exc_info=True)
                 self.trigram_fts5_available = False
 
@@ -566,7 +566,7 @@ class MemoryStorage:
             if not vec:
                 continue
             if len(vec) != expected_dim:
-                from common.log import logger
+                from extern_agent.common.log import logger
                 logger.warning(
                     "[MemoryStorage] Skipping chunk %s: embedding dim %d != query dim %d",
                     row['id'], len(vec), expected_dim
@@ -741,7 +741,7 @@ class MemoryStorage:
                 for row in rows
             ]
         except Exception:
-            from common.log import logger
+            from extern_agent.common.log import logger
             logger.warning("[MemoryStorage] _search_fts5 failed, returning empty", exc_info=True)
             return []
 
@@ -820,7 +820,7 @@ class MemoryStorage:
             results.sort(key=lambda r: r.score, reverse=True)
             return results
         except Exception:
-            from common.log import logger
+            from extern_agent.common.log import logger
             logger.warning("[MemoryStorage] _search_like failed, returning empty", exc_info=True)
             return []
 
@@ -874,7 +874,7 @@ class MemoryStorage:
                 self.conn.close()
                 self.conn = None  # Mark as closed
             except Exception as e:
-                from common.log import logger
+                from extern_agent.common.log import logger
                 logger.warning("[MemoryStorage] Error closing database connection: %s", e)
     
     def __del__(self):
@@ -1002,7 +1002,7 @@ class MemoryStorage:
                 for row in rows
             ]
         except Exception:
-            from common.log import logger
+            from extern_agent.common.log import logger
             logger.warning("[MemoryStorage] _search_fts5_trigram failed, returning empty", exc_info=True)
             return []
 

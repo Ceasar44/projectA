@@ -15,16 +15,16 @@ from typing import List, Tuple
 
 import web
 
-from bridge.context import *
-from bridge.reply import Reply, ReplyType
-from channel.chat_channel import ChatChannel, check_prefix
-from channel.chat_message import ChatMessage
+from extern_agent.bridge.context import *
+from extern_agent.bridge.reply import Reply, ReplyType
+from extern_agent.channel.chat_channel import ChatChannel, check_prefix
+from extern_agent.channel.chat_message import ChatMessage
 from collections import OrderedDict
-from common import const
-from common import i18n
-from common.log import logger
-from common.singleton import singleton
-from config import conf
+from extern_agent.common import const
+from extern_agent.common import i18n
+from extern_agent.common.log import logger
+from extern_agent.common.singleton import singleton
+from extern_agent.config import conf
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg"}
 VIDEO_EXTENSIONS = {".mp4", ".webm", ".avi", ".mov", ".mkv"}
@@ -104,7 +104,7 @@ def _cancel_reply_text(cancelled: int, lang: str) -> str:
 
 
 def _get_upload_dir() -> str:
-    from common.utils import expand_path
+    from extern_agent.common.utils import expand_path
     ws_root = expand_path(conf().get("agent_workspace", "~/cow"))
     tmp_dir = os.path.join(ws_root, "tmp")
     os.makedirs(tmp_dir, exist_ok=True)
@@ -202,7 +202,7 @@ def _ensure_list(value):
 
 def _generate_session_title(user_message: str, assistant_reply: str = "") -> str:
     """Delegate to the shared SessionService implementation."""
-    from agent.chat.session_service import generate_session_title
+    from extern_agent.agent.chat.session_service import generate_session_title
     return generate_session_title(user_message, assistant_reply)
 
 
@@ -260,7 +260,7 @@ class WebChannel(ChatChannel):
         page refresh.
         """
         try:
-            from agent.memory import get_conversation_store
+            from extern_agent.agent.memory import get_conversation_store
             return get_conversation_store().get_latest_pair_seqs(session_id)
         except Exception as e:
             logger.debug(f"[WebChannel] _fetch_latest_pair_seqs failed: {e}")
@@ -590,7 +590,7 @@ class WebChannel(ChatChannel):
         text: str,
     ) -> None:
         try:
-            from bridge.bridge import Bridge
+            from extern_agent.bridge.bridge import Bridge
             reply = Bridge().fetch_text_to_voice(text)
             if reply is None or reply.type != ReplyType.VOICE or not reply.content:
                 logger.warning(
@@ -604,7 +604,7 @@ class WebChannel(ChatChannel):
                 return
             payload = {"audio": {"url": url, "kind": "tts"}}
             try:
-                from agent.memory import get_conversation_store
+                from extern_agent.agent.memory import get_conversation_store
                 get_conversation_store().attach_extras_to_last_assistant(session_id, payload)
             except Exception as e:
                 logger.debug(f"[WebChannel] tts persist skipped: {e}")
@@ -807,7 +807,7 @@ class WebChannel(ChatChannel):
             # inline_reply payload to be rendered synchronously.
             stripped_prompt = (prompt or "").strip().lower()
             if stripped_prompt == "/cancel":
-                from agent.protocol import get_cancel_registry
+                from extern_agent.agent.protocol import get_cancel_registry
                 cancelled = get_cancel_registry().cancel_session(session_id)
                 lang = (json_data.get('lang') or 'zh').lower()
                 msg_text = _cancel_reply_text(cancelled, lang)
@@ -952,7 +952,7 @@ class WebChannel(ChatChannel):
         client's UX is idempotent.
         """
         try:
-            from agent.protocol import get_cancel_registry
+            from extern_agent.agent.protocol import get_cancel_registry
 
             data = web.data()
             try:
@@ -1272,7 +1272,7 @@ class VoiceAsrHandler:
 
             audio_url = f"/uploads/{saved_name}"
 
-            from bridge.bridge import Bridge
+            from extern_agent.bridge.bridge import Bridge
             reply = Bridge().fetch_voice_to_text(saved_path)
             if reply is None:
                 return json.dumps({
@@ -1281,7 +1281,7 @@ class VoiceAsrHandler:
                     "audio_url": audio_url,
                 })
 
-            from bridge.reply import ReplyType
+            from extern_agent.bridge.reply import ReplyType
             if reply.type == ReplyType.TEXT:
                 return json.dumps({
                     "status": "success",
@@ -1315,7 +1315,7 @@ class VoiceTtsHandler:
             if not channel._tts_provider_ready():
                 return json.dumps({"status": "error", "message": "tts not configured"})
 
-            from bridge.bridge import Bridge
+            from extern_agent.bridge.bridge import Bridge
             reply = Bridge().fetch_text_to_voice(text)
             if reply is None or reply.type != ReplyType.VOICE or not reply.content:
                 msg = getattr(reply, "content", "") or "tts failed"
@@ -1327,7 +1327,7 @@ class VoiceTtsHandler:
 
             if session_id:
                 try:
-                    from agent.memory import get_conversation_store
+                    from extern_agent.agent.memory import get_conversation_store
                     get_conversation_store().attach_extras_to_last_assistant(
                         session_id, {"audio": {"url": url, "kind": "tts"}},
                     )
@@ -1704,7 +1704,7 @@ class ConfigHandler:
             bridge_routing_keys = {"bot_type", "use_linkai", "model"}
             if any(k in applied for k in bridge_routing_keys):
                 try:
-                    from bridge.bridge import Bridge
+                    from extern_agent.bridge.bridge import Bridge
                     Bridge().reset_bot()
                     logger.info("[WebChannel] Bridge bot routing reset due to config change")
                 except Exception as reset_err:
@@ -2888,7 +2888,7 @@ class ModelsHandler:
     @staticmethod
     def _refresh_voice_routing() -> None:
         try:
-            from bridge.bridge import Bridge
+            from extern_agent.bridge.bridge import Bridge
             Bridge().refresh_voice()
         except Exception as e:
             logger.warning(f"[ModelsHandler] Bridge voice refresh failed: {e}")
@@ -2959,7 +2959,7 @@ class ModelsHandler:
     @staticmethod
     def _reset_bridge() -> None:
         try:
-            from bridge.bridge import Bridge
+            from extern_agent.bridge.bridge import Bridge
             Bridge().reset_bot()
             logger.info("[ModelsHandler] Bridge bot routing reset")
         except Exception as e:
@@ -3414,7 +3414,7 @@ class WeixinQrHandler:
                     "source": "channel",
                 })
 
-            from channel.weixin.weixin_api import WeixinApi, DEFAULT_BASE_URL
+            from extern_agent.channel.weixin.weixin_api import WeixinApi, DEFAULT_BASE_URL
             base_url = conf().get("weixin_base_url", DEFAULT_BASE_URL)
             api = WeixinApi(base_url=base_url)
             qr_resp = api.fetch_qr_code()
@@ -3457,7 +3457,7 @@ class WeixinQrHandler:
         if not qrcode:
             return json.dumps({"status": "error", "message": "No active QR session"})
 
-        from channel.weixin.weixin_api import WeixinApi, DEFAULT_BASE_URL
+        from extern_agent.channel.weixin.weixin_api import WeixinApi, DEFAULT_BASE_URL
         api = WeixinApi(base_url=base_url or DEFAULT_BASE_URL)
         try:
             status_resp = api.poll_qr_status(qrcode, timeout=10)
@@ -3478,7 +3478,7 @@ class WeixinQrHandler:
             cred_path = os.path.expanduser(
                 conf().get("weixin_credentials_path", "~/.weixin_cow_credentials.json")
             )
-            from channel.weixin.weixin_channel import _save_credentials
+            from extern_agent.channel.weixin.weixin_channel import _save_credentials
             _save_credentials(cred_path, {
                 "token": bot_token,
                 "base_url": result_base_url,
@@ -3684,7 +3684,7 @@ class FeishuRegisterHandler:
 
 def _get_workspace_root():
     """Resolve the agent workspace directory."""
-    from common.utils import expand_path
+    from extern_agent.common.utils import expand_path
     return expand_path(conf().get("agent_workspace", "~/cow"))
 
 
@@ -3693,7 +3693,7 @@ class ToolsHandler:
         _require_auth()
         web.header('Content-Type', 'application/json; charset=utf-8')
         try:
-            from agent.tools.tool_manager import ToolManager
+            from extern_agent.agent.tools.tool_manager import ToolManager
             tm = ToolManager()
             if not tm.tool_classes:
                 tm.load_tools()
@@ -3718,8 +3718,8 @@ class SkillsHandler:
         _require_auth()
         web.header('Content-Type', 'application/json; charset=utf-8')
         try:
-            from agent.skills.service import SkillService
-            from agent.skills.manager import SkillManager
+            from extern_agent.agent.skills.service import SkillService
+            from extern_agent.agent.skills.manager import SkillManager
             workspace_root = _get_workspace_root()
             manager = SkillManager(custom_dir=os.path.join(workspace_root, "skills"))
             service = SkillService(manager)
@@ -3733,8 +3733,8 @@ class SkillsHandler:
         _require_auth()
         web.header('Content-Type', 'application/json; charset=utf-8')
         try:
-            from agent.skills.service import SkillService
-            from agent.skills.manager import SkillManager
+            from extern_agent.agent.skills.service import SkillService
+            from extern_agent.agent.skills.manager import SkillManager
             body = json.loads(web.data())
             action = body.get("action")
             name = body.get("name")
@@ -3760,7 +3760,7 @@ class MemoryHandler:
         _require_auth()
         web.header('Content-Type', 'application/json; charset=utf-8')
         try:
-            from agent.memory.service import MemoryService
+            from extern_agent.agent.memory.service import MemoryService
             params = web.input(page='1', page_size='20', category='memory')
             workspace_root = _get_workspace_root()
             service = MemoryService(workspace_root)
@@ -3779,7 +3779,7 @@ class MemoryContentHandler:
         _require_auth()
         web.header('Content-Type', 'application/json; charset=utf-8')
         try:
-            from agent.memory.service import MemoryService
+            from extern_agent.agent.memory.service import MemoryService
             params = web.input(filename='', category='memory')
             if not params.filename:
                 return json.dumps({"status": "error", "message": "filename required"})
@@ -3801,7 +3801,7 @@ class SchedulerHandler:
         _require_auth()
         web.header('Content-Type', 'application/json; charset=utf-8')
         try:
-            from agent.tools.scheduler.task_store import TaskStore
+            from extern_agent.agent.tools.scheduler.task_store import TaskStore
             workspace_root = _get_workspace_root()
             store_path = os.path.join(workspace_root, "scheduler", "tasks.json")
             store = TaskStore(store_path)
@@ -3818,7 +3818,7 @@ class SessionsHandler:
         web.header('Content-Type', 'application/json; charset=utf-8')
         try:
             params = web.input(page='1', page_size='50')
-            from agent.memory import get_conversation_store
+            from extern_agent.agent.memory import get_conversation_store
             store = get_conversation_store()
             result = store.list_sessions(
                 channel_type="web",
@@ -3840,13 +3840,13 @@ class SessionDetailHandler:
             if not session_id:
                 return json.dumps({"status": "error", "message": "session_id required"})
 
-            from agent.memory import get_conversation_store
+            from extern_agent.agent.memory import get_conversation_store
             store = get_conversation_store()
             store.clear_session(session_id)
 
             # Also remove the Agent instance from AgentBridge if exists
             try:
-                from bridge.bridge import Bridge
+                from extern_agent.bridge.bridge import Bridge
                 ab = Bridge().get_agent_bridge()
                 if session_id in ab.agents:
                     del ab.agents[session_id]
@@ -3874,7 +3874,7 @@ class SessionDetailHandler:
             if not title:
                 return json.dumps({"status": "error", "message": "title required"})
 
-            from agent.memory import get_conversation_store
+            from extern_agent.agent.memory import get_conversation_store
             store = get_conversation_store()
             found = store.rename_session(session_id, title)
             if not found:
@@ -3901,7 +3901,7 @@ class SessionTitleHandler:
 
             title = _generate_session_title(user_message, assistant_reply)
 
-            from agent.memory import get_conversation_store
+            from extern_agent.agent.memory import get_conversation_store
             store = get_conversation_store()
             updated = store.rename_session(session_id, title)
             logger.info(f"[WebChannel] Session title set: sid={session_id}, title='{title}', db_updated={updated}")
@@ -3920,13 +3920,13 @@ class SessionClearContextHandler:
             if not session_id:
                 return json.dumps({"status": "error", "message": "session_id required"})
 
-            from agent.memory import get_conversation_store
+            from extern_agent.agent.memory import get_conversation_store
             store = get_conversation_store()
             new_seq = store.clear_context(session_id)
 
             # Delete the agent instance so a fresh one is created on the next message
             try:
-                from bridge.bridge import Bridge
+                from extern_agent.bridge.bridge import Bridge
                 bridge = Bridge()
                 ab = bridge.get_agent_bridge()
                 if session_id in ab.agents:
@@ -3952,7 +3952,7 @@ class HistoryHandler:
             if not session_id:
                 return json.dumps({"status": "error", "message": "session_id required"})
 
-            from agent.memory import get_conversation_store
+            from extern_agent.agent.memory import get_conversation_store
             store = get_conversation_store()
             result = store.load_history_page(
                 session_id=session_id,
@@ -3981,14 +3981,14 @@ class MessageDeleteHandler:
                 return json.dumps({"status": "error", "message": "session_id and user_seq required"})
             
             # 1. Delete from database
-            from agent.memory import get_conversation_store
+            from extern_agent.agent.memory import get_conversation_store
             store = get_conversation_store()
             deleted = store.delete_message_pair(session_id, int(user_seq), delete_user=delete_user, cascade=cascade)
 
             # 2. Sync agent's in-memory context so its next turn sees the
             # same history as the DB. Handled by the agent_bridge helper.
             try:
-                from bridge import Bridge
+                from extern_agent.bridge import Bridge
                 Bridge().get_agent_bridge().sync_session_messages_from_store(session_id)
             except Exception as sync_err:
                 logger.warning(f"[WebChannel] Failed to sync agent memory: {sync_err}")
@@ -4006,7 +4006,7 @@ class LogsHandler:
         web.header('Cache-Control', 'no-cache')
         web.header('X-Accel-Buffering', 'no')
 
-        from config import get_root
+        from extern_agent.config import get_root
         log_path = os.path.join(get_root(), "run.log")
 
         def generate():
@@ -4101,7 +4101,7 @@ class KnowledgeListHandler:
         _require_auth()
         web.header('Content-Type', 'application/json; charset=utf-8')
         try:
-            from agent.knowledge.service import KnowledgeService
+            from extern_agent.agent.knowledge.service import KnowledgeService
             svc = KnowledgeService(_get_workspace_root())
             result = svc.list_tree()
             return json.dumps({"status": "success", **result}, ensure_ascii=False)
@@ -4115,7 +4115,7 @@ class KnowledgeReadHandler:
         _require_auth()
         web.header('Content-Type', 'application/json; charset=utf-8')
         try:
-            from agent.knowledge.service import KnowledgeService
+            from extern_agent.agent.knowledge.service import KnowledgeService
             params = web.input(path='')
             svc = KnowledgeService(_get_workspace_root())
             result = svc.read_file(params.path)
@@ -4132,7 +4132,7 @@ class KnowledgeGraphHandler:
         _require_auth()
         web.header('Content-Type', 'application/json; charset=utf-8')
         try:
-            from agent.knowledge.service import KnowledgeService
+            from extern_agent.agent.knowledge.service import KnowledgeService
             svc = KnowledgeService(_get_workspace_root())
             return json.dumps(svc.build_graph(), ensure_ascii=False)
         except Exception as e:

@@ -1,7 +1,7 @@
 import re
 import time
 import config
-from common.log import logger
+from extern_agent.common.log import logger
 
 
 def time_checker(f):

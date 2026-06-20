@@ -7,12 +7,12 @@ import json
 import time
 from typing import List, Dict, Any, Optional, Callable, Tuple
 
-from agent.protocol.cancel import AgentCancelledError
-from agent.protocol.models import LLMRequest, LLMModel
-from agent.protocol.message_utils import sanitize_claude_messages, compress_turn_to_text_only
-from agent.tools.base_tool import BaseTool, ToolResult
-from common.log import logger
-from common.i18n import t as _t
+from extern_agent.agent.protocol.cancel import AgentCancelledError
+from extern_agent.agent.protocol.models import LLMRequest, LLMModel
+from extern_agent.agent.protocol.message_utils import sanitize_claude_messages, compress_turn_to_text_only
+from extern_agent.agent.tools.base_tool import BaseTool, ToolResult
+from extern_agent.common.log import logger
+from extern_agent.common.i18n import t as _t
 
 # Optional: repair malformed JSON args from non-strict providers (e.g. unescaped quotes in long content).
 try:
@@ -222,7 +222,7 @@ class AgentStreamExecutor:
         whether to send ``thinking={"type": "enabled"}`` to the model. Used for
         logging and reasoning-update event emission across all channels.
         """
-        from config import conf
+        from extern_agent.config import conf
         return bool(conf().get("enable_thinking", False))
 
     def _should_render_thinking_inline(self) -> bool:
@@ -233,7 +233,7 @@ class AgentStreamExecutor:
         (WeChat/WeCom/DingTalk/Feishu) must strip them, otherwise users see raw
         XML tags in their chat.
         """
-        from config import conf
+        from extern_agent.config import conf
         channel_type = getattr(self.model, 'channel_type', '') or ''
         return conf().get("enable_thinking", False) and channel_type == 'web'
 
@@ -731,7 +731,7 @@ class AgentStreamExecutor:
         # Cheap dict reconciliation (microseconds) — lets the agent pick up
         # newly available MCP tools mid-conversation without a session restart.
         try:
-            from agent.tools import ToolManager
+            from extern_agent.agent.tools import ToolManager
             ToolManager().sync_mcp_into_agent(self)
         except Exception as e:
             logger.debug(f"[Agent] MCP sync skipped: {e}")
@@ -1704,7 +1704,7 @@ class AgentStreamExecutor:
             session_id = getattr(self.agent, '_current_session_id', None)
             if not session_id:
                 return
-            from agent.memory import get_conversation_store
+            from extern_agent.agent.memory import get_conversation_store
             store = get_conversation_store()
             store.clear_session(session_id)
             logger.info(f"🗑️ Cleared dirty session data from DB: {session_id}")

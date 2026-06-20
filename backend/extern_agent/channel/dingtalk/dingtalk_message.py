@@ -4,13 +4,13 @@ import re
 import requests
 from dingtalk_stream import ChatbotMessage
 
-from bridge.context import ContextType
-from channel.chat_message import ChatMessage
+from extern_agent.bridge.context import ContextType
+from extern_agent.channel.chat_message import ChatMessage
 # -*- coding=utf-8 -*-
-from common.log import logger
-from common.tmp_dir import TmpDir
-from common.utils import expand_path
-from config import conf
+from extern_agent.common.log import logger
+from extern_agent.common.tmp_dir import TmpDir
+from extern_agent.common.utils import expand_path
+from extern_agent.config import conf
 
 
 class DingTalkMessage(ChatMessage):
@@ -131,7 +131,7 @@ def download_image_file(image_url, temp_dir):
         
         # 需要从外部传入 access_token，这里先用一个临时方案
         # 从 config 获取 dingtalk_client_id 和 dingtalk_client_secret
-        from config import conf
+        from extern_agent.config import conf
         client_id = conf().get("dingtalk_client_id")
         client_secret = conf().get("dingtalk_client_secret")
         

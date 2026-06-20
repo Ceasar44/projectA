@@ -5,7 +5,7 @@ Allows agents to search their memory using semantic and keyword search
 """
 
 from typing import Dict, Any, Optional
-from agent.tools.base_tool import BaseTool
+from extern_agent.agent.tools.base_tool import BaseTool
 
 
 class MemorySearchTool(BaseTool):
@@ -49,7 +49,7 @@ class MemorySearchTool(BaseTool):
         self.memory_manager = memory_manager
         self.user_id = user_id
 
-        from config import conf
+        from extern_agent.config import conf
         if conf().get("knowledge", True):
             self.description = (
                 "Search agent's long-term memory and knowledge base using semantic and keyword search. "
@@ -66,7 +66,7 @@ class MemorySearchTool(BaseTool):
         Returns:
             ToolResult with formatted search results
         """
-        from agent.tools.base_tool import ToolResult
+        from extern_agent.agent.tools.base_tool import ToolResult
         import asyncio
         
         query = args.get("query")

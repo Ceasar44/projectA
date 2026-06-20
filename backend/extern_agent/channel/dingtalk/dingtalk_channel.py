@@ -18,16 +18,16 @@ from dingtalk_stream.card_replier import AICardReplier
 from dingtalk_stream.card_replier import AICardStatus
 from dingtalk_stream.card_replier import CardReplier
 
-from bridge.context import Context, ContextType
-from bridge.reply import Reply, ReplyType
-from channel.chat_channel import ChatChannel
-from common.utils import expand_path
-from channel.dingtalk.dingtalk_message import DingTalkMessage
-from common.expired_dict import ExpiredDict
-from common.log import logger
-from common.singleton import singleton
-from common.time_check import time_checker
-from config import conf
+from extern_agent.bridge.context import Context, ContextType
+from extern_agent.bridge.reply import Reply, ReplyType
+from extern_agent.channel.chat_channel import ChatChannel
+from extern_agent.common.utils import expand_path
+from extern_agent.channel.dingtalk.dingtalk_message import DingTalkMessage
+from extern_agent.common.expired_dict import ExpiredDict
+from extern_agent.common.log import logger
+from extern_agent.common.singleton import singleton
+from extern_agent.common.time_check import time_checker
+from extern_agent.config import conf
 
 
 class CustomAICardReplier(CardReplier):
@@ -621,7 +621,7 @@ class DingTalkChanel(ChatChannel, dingtalk_stream.ChatbotHandler):
             logger.debug("[DingTalk]receive other msg: {}".format(cmsg.content))
         
         # 处理文件缓存逻辑
-        from channel.file_cache import get_file_cache
+        from extern_agent.channel.file_cache import get_file_cache
         file_cache = get_file_cache()
         
         # 单聊的 session_id 就是 sender_id
@@ -679,7 +679,7 @@ class DingTalkChanel(ChatChannel, dingtalk_stream.ChatbotHandler):
             logger.debug("[DingTalk]receive other msg: {}".format(cmsg.content))
         
         # 处理文件缓存逻辑
-        from channel.file_cache import get_file_cache
+        from extern_agent.channel.file_cache import get_file_cache
         file_cache = get_file_cache()
         
         # 群聊的 session_id

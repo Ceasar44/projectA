@@ -7,9 +7,9 @@ import re
 from typing import Dict, Any
 from pathlib import Path
 
-from agent.tools.base_tool import BaseTool, ToolResult
-from common.log import logger
-from common.utils import expand_path
+from extern_agent.agent.tools.base_tool import BaseTool, ToolResult
+from extern_agent.common.log import logger
+from extern_agent.common.utils import expand_path
 
 
 # API Key 知识库：常见的环境变量及其描述

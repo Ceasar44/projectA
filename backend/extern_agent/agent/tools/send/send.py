@@ -6,8 +6,8 @@ import os
 from typing import Dict, Any
 from pathlib import Path
 
-from agent.tools.base_tool import BaseTool, ToolResult
-from common.utils import expand_path
+from extern_agent.agent.tools.base_tool import BaseTool, ToolResult
+from extern_agent.common.utils import expand_path
 
 
 class Send(BaseTool):
@@ -100,7 +100,7 @@ class Send(BaseTool):
         }
 
         try:
-            from common.cloud_client import get_website_base_url, copy_send_file
+            from extern_agent.common.cloud_client import get_website_base_url, copy_send_file
 
             # Do nothing when in local env
             if get_website_base_url():

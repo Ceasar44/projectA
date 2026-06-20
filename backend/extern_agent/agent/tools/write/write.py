@@ -7,8 +7,8 @@ import os
 from typing import Dict, Any
 from pathlib import Path
 
-from agent.tools.base_tool import BaseTool, ToolResult
-from common.utils import expand_path
+from extern_agent.agent.tools.base_tool import BaseTool, ToolResult
+from extern_agent.common.utils import expand_path
 
 
 class Write(BaseTool):

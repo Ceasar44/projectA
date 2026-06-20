@@ -12,15 +12,15 @@ from wechatpy.crypto import WeChatCrypto
 from wechatpy.exceptions import WeChatClientException
 from collections import defaultdict
 
-from bridge.context import *
-from bridge.reply import *
-from channel.chat_channel import ChatChannel
-from channel.wechatmp.common import *
-from channel.wechatmp.wechatmp_client import WechatMPClient
-from common.log import logger
-from common.singleton import singleton
-from common.utils import split_string_by_utf8_length, remove_markdown_symbol
-from config import conf
+from extern_agent.bridge.context import *
+from extern_agent.bridge.reply import *
+from extern_agent.channel.chat_channel import ChatChannel
+from extern_agent.channel.wechatmp.common import *
+from extern_agent.channel.wechatmp.wechatmp_client import WechatMPClient
+from extern_agent.common.log import logger
+from extern_agent.common.singleton import singleton
+from extern_agent.common.utils import split_string_by_utf8_length, remove_markdown_symbol
+from extern_agent.config import conf
 
 try:
     from voice.audio_convert import any_to_mp3, split_audio

@@ -9,10 +9,10 @@ import threading
 import time
 from typing import Optional, List
 
-from agent.protocol import Agent
-from agent.tools import ToolManager
-from common.log import logger
-from common.utils import expand_path
+from extern_agent.agent.protocol import Agent
+from extern_agent.agent.tools import ToolManager
+from extern_agent.common.log import logger
+from extern_agent.common.utils import expand_path
 
 # Module-level lock to serialize scheduler init across concurrent sessions
 _scheduler_init_lock = threading.Lock()
@@ -52,7 +52,7 @@ class AgentInitializer:
         Returns:
             Initialized agent instance
         """
-        from config import conf
+        from extern_agent.config import conf
         
         # Get workspace from config
         workspace_root = expand_path(conf().get("agent_workspace", "~/cow"))
@@ -64,7 +64,7 @@ class AgentInitializer:
         self._load_env_file()
         
         # Initialize workspace
-        from agent.prompt import ensure_workspace, load_context_files, PromptBuilder
+        from extern_agent.agent.prompt import ensure_workspace, load_context_files, PromptBuilder
         workspace_files = ensure_workspace(workspace_root, create_templates=True)
         
         if session_id is None:
@@ -98,7 +98,7 @@ class AgentInitializer:
         )
         
         # Get cost control parameters
-        from config import conf
+        from extern_agent.config import conf
         max_steps = conf().get("agent_max_steps", 20)
         max_context_tokens = conf().get("agent_max_context_tokens", 50000)
         
@@ -144,12 +144,12 @@ class AgentInitializer:
            restoring tool chains across model switches causes 400 errors.
         4. Eliminates the entire class of tool_use/tool_result pairing bugs.
         """
-        from config import conf
+        from extern_agent.config import conf
         if not conf().get("conversation_persistence", True):
             return
 
         try:
-            from agent.memory import get_conversation_store
+            from extern_agent.agent.memory import get_conversation_store
             store = get_conversation_store()
             max_turns = conf().get("agent_max_context_turns", 20)
             # Scheduler tasks run on a stable isolated session per task and
@@ -276,9 +276,9 @@ class AgentInitializer:
         memory_tools = []
         
         try:
-            from agent.memory import MemoryManager, MemoryConfig
-            from agent.tools import MemorySearchTool, MemoryGetTool
-            from config import conf
+            from extern_agent.agent.memory import MemoryManager, MemoryConfig
+            from extern_agent.agent.tools import MemorySearchTool, MemoryGetTool
+            from extern_agent.config import conf
 
             memory_config = MemoryConfig(workspace_root=workspace_root)
 
@@ -316,8 +316,8 @@ class AgentInitializer:
              quietly return no results (cosine returns 0) and keyword search
              takes over until the user runs /memory rebuild-index.
         """
-        from agent.memory import create_embedding_provider
-        from config import conf
+        from extern_agent.agent.memory import create_embedding_provider
+        from extern_agent.config import conf
 
         explicit_provider = (conf().get("embedding_provider") or "").strip().lower()
 
@@ -330,8 +330,8 @@ class AgentInitializer:
 
     def _init_embedding_provider_legacy(self, session_id: Optional[str] = None):
         """Legacy auto-init path: OpenAI -> LinkAI. Preserved verbatim for compat."""
-        from agent.memory import create_embedding_provider
-        from config import conf
+        from extern_agent.agent.memory import create_embedding_provider
+        from extern_agent.config import conf
 
         embedding_provider = None
         embedding_model = None
@@ -391,9 +391,9 @@ class AgentInitializer:
         and keyword search takes over. Users switch vendors by running
         /memory rebuild-index — see docs.
         """
-        from agent.memory import create_embedding_provider
-        from agent.memory.embedding import EMBEDDING_VENDORS
-        from config import conf
+        from extern_agent.agent.memory import create_embedding_provider
+        from extern_agent.agent.memory.embedding import EMBEDDING_VENDORS
+        from extern_agent.config import conf
 
         meta = EMBEDDING_VENDORS.get(provider_key)
         if meta is None:
@@ -448,7 +448,7 @@ class AgentInitializer:
     @staticmethod
     def _resolve_embedding_api_key(provider_key: str) -> str:
         """Pick the API key for an explicit embedding provider from config."""
-        from config import conf
+        from extern_agent.config import conf
 
         key_map = {
             "openai":    "open_ai_api_key",
@@ -468,7 +468,7 @@ class AgentInitializer:
     @staticmethod
     def _resolve_embedding_api_base(provider_key: str, default_base: str) -> str:
         """Pick the API base for an explicit embedding provider from config."""
-        from config import conf
+        from extern_agent.config import conf
 
         base_map = {
             "openai":    "open_ai_api_base",
@@ -519,14 +519,14 @@ class AgentInitializer:
             try:
                 # Skip web_search if no API key is available
                 if tool_name == "web_search":
-                    from agent.tools.web_search.web_search import WebSearch
+                    from extern_agent.agent.tools.web_search.web_search import WebSearch
                     if not WebSearch.is_available():
                         logger.debug("[AgentInitializer] WebSearch skipped - no search provider configured")
                         continue
 
                 # Special handling for EnvConfig tool
                 if tool_name == "env_config":
-                    from agent.tools import EnvConfig
+                    from extern_agent.agent.tools import EnvConfig
                     tool = EnvConfig({"agent_bridge": self.agent_bridge})
                 else:
                     tool = tool_manager.create_tool(tool_name)
@@ -581,7 +581,7 @@ class AgentInitializer:
             with _scheduler_init_lock:
                 if not self.agent_bridge.scheduler_initialized:
                     try:
-                        from agent.tools.scheduler.integration import init_scheduler
+                        from extern_agent.agent.tools.scheduler.integration import init_scheduler
                         if init_scheduler(self.agent_bridge):
                             self.agent_bridge.scheduler_initialized = True
                             if session_id is None:
@@ -592,9 +592,9 @@ class AgentInitializer:
         # Inject scheduler dependencies
         if self.agent_bridge.scheduler_initialized:
             try:
-                from agent.tools.scheduler.integration import get_task_store, get_scheduler_service
-                from agent.tools import SchedulerTool
-                from config import conf
+                from extern_agent.agent.tools.scheduler.integration import get_task_store, get_scheduler_service
+                from extern_agent.agent.tools import SchedulerTool
+                from extern_agent.config import conf
                 
                 task_store = get_task_store()
                 scheduler_service = get_scheduler_service()
@@ -619,7 +619,7 @@ class AgentInitializer:
     def _initialize_skill_manager(self, workspace_root: str, session_id: Optional[str] = None):
         """Initialize skill manager"""
         try:
-            from agent.skills import SkillManager
+            from extern_agent.agent.skills import SkillManager
             skill_manager = SkillManager(custom_dir=os.path.join(workspace_root, "skills"))
             return skill_manager
         except Exception as e:
@@ -628,7 +628,7 @@ class AgentInitializer:
     
     def _get_runtime_info(self, workspace_root: str):
         """Get runtime information with dynamic time support"""
-        from config import conf
+        from extern_agent.config import conf
         
         def get_current_time():
             """Get current time dynamically - called each time system prompt is accessed"""
@@ -646,7 +646,7 @@ class AgentInitializer:
             # Weekday: English name in en, Chinese mapping otherwise
             weekday_en = now.strftime("%A")
             try:
-                from common import i18n
+                from extern_agent.common import i18n
                 is_en = i18n.get_language() == "en"
             except Exception:
                 is_en = False
@@ -678,7 +678,7 @@ class AgentInitializer:
     
     def _migrate_config_to_env(self, workspace_root: str):
         """Migrate API keys from config.json to .env file"""
-        from config import conf
+        from extern_agent.config import conf
         
         key_mapping = {
             "open_ai_api_key": "OPENAI_API_KEY",

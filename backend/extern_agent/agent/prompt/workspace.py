@@ -9,7 +9,7 @@ import os
 from typing import List, Optional, Dict
 from dataclasses import dataclass
 
-from common.log import logger
+from extern_agent.common.log import logger
 from .builder import ContextFile
 
 
@@ -68,7 +68,7 @@ def ensure_workspace(workspace_dir: str, create_templates: bool = True) -> Works
     websites_dir = os.path.join(workspace_dir, "websites")
     os.makedirs(websites_dir, exist_ok=True)
 
-    from config import conf
+    from extern_agent.config import conf
     knowledge_enabled = conf().get("knowledge", True)
     if knowledge_enabled:
         knowledge_dir = os.path.join(workspace_dir, "knowledge")
@@ -265,7 +265,7 @@ def _is_onboarding_done(workspace_dir: str) -> bool:
 def _is_en_lang() -> bool:
     """True when the resolved UI language is English."""
     try:
-        from common import i18n
+        from extern_agent.common import i18n
         return i18n.get_language() == "en"
     except Exception:
         return False
@@ -653,7 +653,7 @@ def _get_bootstrap_template() -> str:
     English user in Chinese on day one.
     """
     try:
-        from common import i18n
+        from extern_agent.common import i18n
         if i18n.get_language() == "en":
             return _BOOTSTRAP_TEMPLATE_EN
     except Exception:

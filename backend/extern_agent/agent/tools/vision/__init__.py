@@ -1,1 +1,1 @@
-from agent.tools.vision.vision import Vision
+from extern_agent.agent.tools.vision.vision import Vision

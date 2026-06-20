@@ -2,7 +2,7 @@ import io
 import os
 import re
 from urllib.parse import urlparse
-from common.log import logger
+from extern_agent.common.log import logger
 
 def fsize(file):
     if isinstance(file, io.BytesIO):
@@ -121,7 +121,7 @@ def is_cloud_deployment() -> bool:
     if os.environ.get("CLOUD_DEPLOYMENT_ID"):
         return True
     try:
-        from config import conf
+        from extern_agent.config import conf
         if conf().get("cloud_deployment_id"):
             return True
     except Exception:

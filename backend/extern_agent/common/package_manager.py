@@ -3,7 +3,7 @@ import time
 import pip
 from pip._internal import main as pipmain
 
-from common.log import _reset_logger, logger
+from extern_agent.common.log import _reset_logger, logger
 
 
 def install(package):

@@ -21,14 +21,14 @@ import threading
 
 import requests
 
-from bridge.context import Context, ContextType
-from bridge.reply import Reply, ReplyType
-from channel.chat_channel import ChatChannel, check_prefix
-from channel.slack.slack_message import SlackMessage
-from common.expired_dict import ExpiredDict
-from common.log import logger
-from common.singleton import singleton
-from config import conf
+from extern_agent.bridge.context import Context, ContextType
+from extern_agent.bridge.reply import Reply, ReplyType
+from extern_agent.channel.chat_channel import ChatChannel, check_prefix
+from extern_agent.channel.slack.slack_message import SlackMessage
+from extern_agent.common.expired_dict import ExpiredDict
+from extern_agent.common.log import logger
+from extern_agent.common.singleton import singleton
+from extern_agent.config import conf
 
 
 @singleton
@@ -222,7 +222,7 @@ class SlackChannel(ChatChannel):
             )
             slack_msg.is_at = is_group  # if we reached here in a channel, bot is mentioned/threaded
 
-            from channel.file_cache import get_file_cache
+            from extern_agent.channel.file_cache import get_file_cache
             file_cache = get_file_cache()
             session_id = self._compute_session_id(event, is_group)
 
@@ -286,7 +286,7 @@ class SlackChannel(ChatChannel):
     def _do_cancel(self, session_id: str, channel_id: str, event: dict):
         """Fast-path: /cancel calls cancel_session directly without going through agent."""
         try:
-            from agent.protocol import get_cancel_registry
+            from extern_agent.agent.protocol import get_cancel_registry
             cancelled = get_cancel_registry().cancel_session(session_id)
             text = "Current task cancelled." if cancelled else "No running task to cancel."
             thread_ts = event.get("thread_ts") or event.get("ts")

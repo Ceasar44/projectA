@@ -6,17 +6,17 @@ Skills are markdown files with frontmatter that provide specialized instructions
 for specific tasks.
 """
 
-from agent.skills.types import (
+from extern_agent.agent.skills.types import (
     Skill,
     SkillEntry,
     SkillMetadata,
     SkillInstallSpec,
     LoadSkillsResult,
 )
-from agent.skills.loader import SkillLoader
-from agent.skills.manager import SkillManager
-from agent.skills.service import SkillService
-from agent.skills.formatter import format_skills_for_prompt
+from extern_agent.agent.skills.loader import SkillLoader
+from extern_agent.agent.skills.manager import SkillManager
+from extern_agent.agent.skills.service import SkillService
+from extern_agent.agent.skills.formatter import format_skills_for_prompt
 
 __all__ = [
     "Skill",

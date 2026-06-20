@@ -1,31 +1,31 @@
 # Import base tool
-from agent.tools.base_tool import BaseTool
-from agent.tools.tool_manager import ToolManager
+from extern_agent.agent.tools.base_tool import BaseTool
+from extern_agent.agent.tools.tool_manager import ToolManager
 
 # Import file operation tools
-from agent.tools.read.read import Read
-from agent.tools.write.write import Write
-from agent.tools.edit.edit import Edit
-from agent.tools.bash.bash import Bash
-from agent.tools.ls.ls import Ls
-from agent.tools.send.send import Send
+from extern_agent.agent.tools.read.read import Read
+from extern_agent.agent.tools.write.write import Write
+from extern_agent.agent.tools.edit.edit import Edit
+from extern_agent.agent.tools.bash.bash import Bash
+from extern_agent.agent.tools.ls.ls import Ls
+from extern_agent.agent.tools.send.send import Send
 
 # Import memory tools
-from agent.tools.memory.memory_search import MemorySearchTool
-from agent.tools.memory.memory_get import MemoryGetTool
+from extern_agent.agent.tools.memory.memory_search import MemorySearchTool
+from extern_agent.agent.tools.memory.memory_get import MemoryGetTool
 
 # Import self-evolution tools
-from agent.tools.evolution_undo.evolution_undo import EvolutionUndoTool
+from extern_agent.agent.tools.evolution_undo.evolution_undo import EvolutionUndoTool
 
 # Import tools with optional dependencies
 def _import_optional_tools():
     """Import tools that have optional dependencies"""
-    from common.log import logger
+    from extern_agent.common.log import logger
     tools = {}
     
     # EnvConfig Tool (requires python-dotenv)
     try:
-        from agent.tools.env_config.env_config import EnvConfig
+        from extern_agent.agent.tools.env_config.env_config import EnvConfig
         tools['EnvConfig'] = EnvConfig
     except ImportError as e:
         logger.error(
@@ -38,7 +38,7 @@ def _import_optional_tools():
     
     # Scheduler Tool (requires croniter)
     try:
-        from agent.tools.scheduler.scheduler_tool import SchedulerTool
+        from extern_agent.agent.tools.scheduler.scheduler_tool import SchedulerTool
         tools['SchedulerTool'] = SchedulerTool
     except ImportError as e:
         logger.error(
@@ -51,7 +51,7 @@ def _import_optional_tools():
 
     # WebSearch Tool (conditionally loaded based on API key availability at init time)
     try:
-        from agent.tools.web_search.web_search import WebSearch
+        from extern_agent.agent.tools.web_search.web_search import WebSearch
         tools['WebSearch'] = WebSearch
     except ImportError as e:
         logger.error(f"[Tools] WebSearch not loaded - missing dependency: {e}")
@@ -60,7 +60,7 @@ def _import_optional_tools():
 
     # WebFetch Tool
     try:
-        from agent.tools.web_fetch.web_fetch import WebFetch
+        from extern_agent.agent.tools.web_fetch.web_fetch import WebFetch
         tools['WebFetch'] = WebFetch
     except ImportError as e:
         logger.error(f"[Tools] WebFetch not loaded - missing dependency: {e}")
@@ -69,7 +69,7 @@ def _import_optional_tools():
 
     # Vision Tool (conditionally loaded based on API key availability)
     try:
-        from agent.tools.vision.vision import Vision
+        from extern_agent.agent.tools.vision.vision import Vision
         tools['Vision'] = Vision
     except ImportError as e:
         logger.error(f"[Tools] Vision not loaded - missing dependency: {e}")
@@ -92,9 +92,9 @@ Terminal = _optional_tools.get('Terminal')
 
 # BrowserTool (requires playwright)
 def _import_browser_tool():
-    from common.log import logger
+    from extern_agent.common.log import logger
     try:
-        from agent.tools.browser.browser_tool import BrowserTool
+        from extern_agent.agent.tools.browser.browser_tool import BrowserTool
         return BrowserTool
     except ImportError as e:
         logger.info(
@@ -113,10 +113,10 @@ BrowserTool = _import_browser_tool()
 # MCP Tools (no extra dependencies, loaded on demand)
 def _import_mcp_tools():
     """导入 MCP 工具模块（无额外依赖，按需加载）"""
-    from common.log import logger
+    from extern_agent.common.log import logger
     try:
-        from agent.tools.mcp.mcp_tool import McpTool
-        from agent.tools.mcp.mcp_client import McpClientRegistry
+        from extern_agent.agent.tools.mcp.mcp_tool import McpTool
+        from extern_agent.agent.tools.mcp.mcp_client import McpClientRegistry
         return {'McpTool': McpTool, 'McpClientRegistry': McpClientRegistry}
     except Exception as e:
         logger.warning(f"[Tools] MCP tools not loaded: {e}")

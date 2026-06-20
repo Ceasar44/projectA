@@ -1,5 +1,5 @@
-from agent.tools.base_tool import BaseTool, ToolResult
-from common.log import logger
+from extern_agent.agent.tools.base_tool import BaseTool, ToolResult
+from extern_agent.common.log import logger
 
 
 class McpTool(BaseTool):

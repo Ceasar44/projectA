@@ -22,7 +22,7 @@ import uuid
 
 import requests
 
-from common.log import logger
+from extern_agent.common.log import logger
 
 DEFAULT_BASE_URL = "https://ilinkai.weixin.qq.com"
 CDN_BASE_URL = "https://novac2c.cdn.weixin.qq.com/c2c"

@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Set
 
-from common.log import logger
+from extern_agent.common.log import logger
 
 _SYNTH_TOOL_ERR = (
     "Error: Missing tool_result adjacent to tool_use (session repair). "

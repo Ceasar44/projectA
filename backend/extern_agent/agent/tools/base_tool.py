@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Any, Optional
-from common.log import logger
+from extern_agent.common.log import logger
 import copy
 
 

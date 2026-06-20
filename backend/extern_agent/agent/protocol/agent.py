@@ -3,11 +3,11 @@ import os
 import time
 import threading
 
-from common.log import logger
-from agent.protocol.models import LLMRequest, LLMModel
-from agent.protocol.agent_stream import AgentStreamExecutor
-from agent.protocol.result import AgentAction, AgentActionType, ToolResult, AgentResult
-from agent.tools.base_tool import BaseTool, ToolStage
+from extern_agent.common.log import logger
+from extern_agent.agent.protocol.models import LLMRequest, LLMModel
+from extern_agent.agent.protocol.agent_stream import AgentStreamExecutor
+from extern_agent.agent.protocol.result import AgentAction, AgentActionType, ToolResult, AgentResult
+from extern_agent.agent.tools.base_tool import BaseTool, ToolStage
 
 
 class Agent:
@@ -61,7 +61,7 @@ class Agent:
             else:
                 # Auto-create skill manager
                 try:
-                    from agent.skills import SkillManager
+                    from extern_agent.agent.skills import SkillManager
                     custom_dir = os.path.join(workspace_dir, "skills") if workspace_dir else None
                     self.skill_manager = SkillManager(custom_dir=custom_dir)
                     logger.debug(f"Initialized SkillManager with {len(self.skill_manager.skills)} skills")
@@ -107,7 +107,7 @@ class Agent:
         Falls back to the cached self.system_prompt on error.
         """
         try:
-            from agent.prompt import load_context_files, PromptBuilder
+            from extern_agent.agent.prompt import load_context_files, PromptBuilder
 
             if self.skill_manager:
                 self.skill_manager.refresh_skills()
@@ -115,7 +115,7 @@ class Agent:
             context_files = load_context_files(self.workspace_dir) if self.workspace_dir else None
 
             try:
-                from common import i18n
+                from extern_agent.common import i18n
                 lang = i18n.get_language()
             except Exception:
                 lang = "zh"
@@ -424,7 +424,7 @@ class Agent:
             original_length = len(self.messages)
 
         # Get max_context_turns from config
-        from config import conf
+        from extern_agent.config import conf
         max_context_turns = conf().get("agent_max_context_turns", 20)
         
         # Create stream executor with copied message history

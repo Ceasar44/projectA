@@ -14,7 +14,7 @@ import urllib.request
 import urllib.error
 from typing import Optional
 
-from common.log import logger
+from extern_agent.common.log import logger
 
 
 # Aliases accepted for the Streamable HTTP transport type

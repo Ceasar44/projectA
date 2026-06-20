@@ -5,14 +5,14 @@ import web
 from wechatpy import parse_message
 from wechatpy.replies import ImageReply, VoiceReply, create_reply
 import textwrap
-from bridge.context import *
-from bridge.reply import *
-from channel.wechatmp.common import *
-from channel.wechatmp.wechatmp_channel import WechatMPChannel
-from channel.wechatmp.wechatmp_message import WeChatMPMessage
-from common.log import logger
-from common.utils import split_string_by_utf8_length
-from config import conf, subscribe_msg
+from extern_agent.bridge.context import *
+from extern_agent.bridge.reply import *
+from extern_agent.channel.wechatmp.common import *
+from extern_agent.channel.wechatmp.wechatmp_channel import WechatMPChannel
+from extern_agent.channel.wechatmp.wechatmp_message import WeChatMPMessage
+from extern_agent.common.log import logger
+from extern_agent.common.utils import split_string_by_utf8_length
+from extern_agent.config import conf, subscribe_msg
 
 
 # This class is instantiated once per query

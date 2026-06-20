@@ -20,14 +20,14 @@ import os
 import re
 import threading
 
-from bridge.context import Context, ContextType
-from bridge.reply import Reply, ReplyType
-from channel.chat_channel import ChatChannel, check_prefix
-from channel.discord.discord_message import DiscordMessage
-from common.expired_dict import ExpiredDict
-from common.log import logger
-from common.singleton import singleton
-from config import conf
+from extern_agent.bridge.context import Context, ContextType
+from extern_agent.bridge.reply import Reply, ReplyType
+from extern_agent.channel.chat_channel import ChatChannel, check_prefix
+from extern_agent.channel.discord.discord_message import DiscordMessage
+from extern_agent.common.expired_dict import ExpiredDict
+from extern_agent.common.log import logger
+from extern_agent.common.singleton import singleton
+from extern_agent.config import conf
 
 # Discord caps a single message at 2000 chars; split conservatively below.
 DISCORD_MSG_LIMIT = 1900
@@ -210,7 +210,7 @@ class DiscordChannel(ChatChannel):
             )
             dc_msg.is_at = is_group  # if we reached here in a guild, bot is mentioned/replied
 
-            from channel.file_cache import get_file_cache
+            from extern_agent.channel.file_cache import get_file_cache
             file_cache = get_file_cache()
             session_id = self._compute_session_id(message, is_group)
 
@@ -272,7 +272,7 @@ class DiscordChannel(ChatChannel):
     async def _do_cancel(self, session_id: str, message):
         """Fast-path: /cancel calls cancel_session directly without going through agent."""
         try:
-            from agent.protocol import get_cancel_registry
+            from extern_agent.agent.protocol import get_cancel_registry
             cancelled = get_cancel_registry().cancel_session(session_id)
             text = "Current task cancelled." if cancelled else "No running task to cancel."
             await message.channel.send(text)

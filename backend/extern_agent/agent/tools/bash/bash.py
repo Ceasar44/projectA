@@ -9,10 +9,10 @@ import subprocess
 import tempfile
 from typing import Dict, Any
 
-from agent.tools.base_tool import BaseTool, ToolResult
-from agent.tools.utils.truncate import truncate_tail, format_size, DEFAULT_MAX_LINES, DEFAULT_MAX_BYTES
-from common.log import logger
-from common.utils import expand_path
+from extern_agent.agent.tools.base_tool import BaseTool, ToolResult
+from extern_agent.agent.tools.utils.truncate import truncate_tail, format_size, DEFAULT_MAX_LINES, DEFAULT_MAX_BYTES
+from extern_agent.common.log import logger
+from extern_agent.common.utils import expand_path
 
 
 class Bash(BaseTool):

@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from common.log import logger
+from extern_agent.common.log import logger
 
 
 # ---------------------------------------------------------------------------
@@ -859,7 +859,7 @@ class ConversationStore:
             Number of sessions deleted.
         """
         try:
-            from config import conf
+            from extern_agent.config import conf
             max_age = max_age_days or conf().get(
                 "conversation_max_age_days", DEFAULT_MAX_AGE_DAYS
             )
@@ -1020,7 +1020,7 @@ class ConversationStore:
         # Honour the current enable_thinking switch when building display turns
         # so that toggling it off hides previously-saved thinking blocks too.
         try:
-            from config import conf
+            from extern_agent.config import conf
             include_thinking = bool(conf().get("enable_thinking", False))
         except Exception:
             include_thinking = False
@@ -1266,10 +1266,10 @@ def get_conversation_store() -> ConversationStore:
             return _store_instance
 
         try:
-            from agent.memory.config import get_default_memory_config
+            from extern_agent.agent.memory.config import get_default_memory_config
             db_path = get_default_memory_config().get_db_path()
         except Exception:
-            from common.utils import expand_path
+            from extern_agent.common.utils import expand_path
             db_path = Path(expand_path("~/cow")) / "memory" / "long-term" / "index.db"
 
         _store_instance = ConversationStore(db_path)

@@ -2,11 +2,11 @@
 Message sending channel abstract class
 """
 
-from bridge.bridge import Bridge
-from bridge.context import Context
-from bridge.reply import *
-from common.log import logger
-from config import conf
+from extern_agent.bridge.bridge import Bridge
+from extern_agent.bridge.context import Context
+from extern_agent.bridge.reply import *
+from extern_agent.common.log import logger
+from extern_agent.config import conf
 
 
 class Channel(object):

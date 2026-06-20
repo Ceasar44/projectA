@@ -5,7 +5,7 @@ Frontmatter parsing for skills.
 import re
 import json
 from typing import Dict, Any, Optional, List
-from agent.skills.types import SkillMetadata, SkillInstallSpec
+from extern_agent.agent.skills.types import SkillMetadata, SkillInstallSpec
 
 
 def parse_frontmatter(content: str) -> Dict[str, Any]:

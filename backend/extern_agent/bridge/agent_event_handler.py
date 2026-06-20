@@ -2,8 +2,8 @@
 Agent Event Handler - Handles agent events and thinking process output
 """
 
-from common import const
-from common.log import logger
+from extern_agent.common import const
+from extern_agent.common.log import logger
 
 # Cap intermediate thinking messages on weixin to stay within send quota.
 WEIXIN_THINKING_INSTANT_MAX = 7
@@ -115,7 +115,7 @@ class AgentEventHandler:
 
     def _do_send(self, message):
         try:
-            from bridge.reply import Reply, ReplyType
+            from extern_agent.bridge.reply import Reply, ReplyType
             reply = Reply(ReplyType.TEXT, message)
             self.channel._send(reply, self.context)
         except Exception as e:

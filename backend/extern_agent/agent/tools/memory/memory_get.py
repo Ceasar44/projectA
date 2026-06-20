@@ -4,7 +4,7 @@ Memory get tool
 Allows agents to read specific sections from memory files
 """
 
-from agent.tools.base_tool import BaseTool
+from extern_agent.agent.tools.base_tool import BaseTool
 
 
 class MemoryGetTool(BaseTool):
@@ -45,7 +45,7 @@ class MemoryGetTool(BaseTool):
         super().__init__()
         self.memory_manager = memory_manager
 
-        from config import conf
+        from extern_agent.config import conf
         if conf().get("knowledge", True):
             self.description = (
                 "Read specific content from memory or knowledge files. "
@@ -68,7 +68,7 @@ class MemoryGetTool(BaseTool):
         Returns:
             ToolResult with file content
         """
-        from agent.tools.base_tool import ToolResult
+        from extern_agent.agent.tools.base_tool import ToolResult
         
         path = args.get("path")
         start_line = args.get("start_line", 1)

@@ -30,21 +30,21 @@ from wechatpy.enterprise.crypto import WeChatCrypto
 from wechatpy.enterprise.exceptions import InvalidCorpIdException
 from wechatpy.exceptions import InvalidSignatureException, WeChatClientException
 
-from bridge.context import Context, ContextType
-from bridge.reply import Reply, ReplyType
-from channel.chat_channel import ChatChannel
-from channel.file_cache import get_file_cache
-from channel.wechat_kf.wechat_kf_cursor_store import CursorStore
-from channel.wechat_kf.wechat_kf_message import WechatKfMessage
-from common.log import logger
-from common.singleton import singleton
-from common.utils import (
+from extern_agent.bridge.context import Context, ContextType
+from extern_agent.bridge.reply import Reply, ReplyType
+from extern_agent.channel.chat_channel import ChatChannel
+from extern_agent.channel.file_cache import get_file_cache
+from extern_agent.channel.wechat_kf.wechat_kf_cursor_store import CursorStore
+from extern_agent.channel.wechat_kf.wechat_kf_message import WechatKfMessage
+from extern_agent.common.log import logger
+from extern_agent.common.singleton import singleton
+from extern_agent.common.utils import (
     compress_imgfile,
     fsize,
     remove_markdown_symbol,
     split_string_by_utf8_length,
 )
-from config import conf
+from extern_agent.config import conf
 
 try:
     from voice.audio_convert import any_to_amr, split_audio

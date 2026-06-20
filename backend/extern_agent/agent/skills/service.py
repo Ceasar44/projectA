@@ -11,9 +11,9 @@ import shutil
 import zipfile
 import tempfile
 from typing import Dict, List, Optional
-from common.log import logger
-from agent.skills.types import Skill, SkillEntry
-from agent.skills.manager import SkillManager
+from extern_agent.common.log import logger
+from extern_agent.agent.skills.types import Skill, SkillEntry
+from extern_agent.agent.skills.manager import SkillManager
 
 try:
     import requests

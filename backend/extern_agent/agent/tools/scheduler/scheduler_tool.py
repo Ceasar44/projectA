@@ -7,10 +7,10 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 from croniter import croniter
 
-from agent.tools.base_tool import BaseTool, ToolResult
-from bridge.context import Context, ContextType
-from bridge.reply import Reply, ReplyType
-from common.log import logger
+from extern_agent.agent.tools.base_tool import BaseTool, ToolResult
+from extern_agent.bridge.context import Context, ContextType
+from extern_agent.bridge.reply import Reply, ReplyType
+from extern_agent.common.log import logger
 
 
 class SchedulerTool(BaseTool):

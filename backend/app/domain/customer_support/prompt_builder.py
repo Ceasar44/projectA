@@ -103,7 +103,7 @@ class CustomerSupportPromptBuilder:
             "",
             "Use tools only when they directly help resolve the support case or verify "
             "customer-specific facts.",
-            "Available CRM tools:",
+            "Available tools:",
         ]
         tool_lines = self._tool_lines(tools)
         if tool_lines:
@@ -190,7 +190,7 @@ class CustomerSupportPromptBuilder:
             current_time = datetime.now(UTC).isoformat()
 
         parts = [f"Current time: {current_time}"]
-        for key in ("model", "channel", "conversation_id"):
+        for key in ("model", "channel", "conversation_id", "workspace"):
             value = runtime_info.get(key)
             if value:
                 parts.append(f"{key}: {value}")

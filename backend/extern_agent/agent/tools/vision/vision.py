@@ -25,10 +25,10 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from agent.tools.base_tool import BaseTool, ToolResult
-from common import const
-from common.log import logger
-from config import conf
+from extern_agent.agent.tools.base_tool import BaseTool, ToolResult
+from extern_agent.common import const
+from extern_agent.common.log import logger
+from extern_agent.config import conf
 
 DEFAULT_MODEL = const.GPT_41_MINI
 DEFAULT_TIMEOUT = 60
@@ -581,7 +581,7 @@ class Vision(BaseTool):
             return None
         api_base = (conf().get("linkai_api_base") or os.environ.get("LINKAI_API_BASE", "")).rstrip("/") \
             or "https://api.link-ai.tech"
-        from common.utils import get_cloud_headers
+        from extern_agent.common.utils import get_cloud_headers
         extra = get_cloud_headers(api_key)
         extra.pop("Authorization", None)
         extra.pop("Content-Type", None)

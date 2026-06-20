@@ -9,8 +9,8 @@ import os
 from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 
-from common.log import logger
-from config import conf
+from extern_agent.common.log import logger
+from extern_agent.config import conf
 
 
 @dataclass
@@ -644,7 +644,7 @@ def _build_workspace_section(workspace_dir: str, language: str) -> List[str]:
 def _build_cloud_website_section(workspace_dir: str) -> List[str]:
     """Build cloud website access prompt when cloud deployment is configured."""
     try:
-        from common.cloud_client import build_website_prompt
+        from extern_agent.common.cloud_client import build_website_prompt
         return build_website_prompt(workspace_dir)
     except Exception:
         return []

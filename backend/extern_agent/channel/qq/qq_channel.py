@@ -16,15 +16,15 @@ import time
 import requests
 import websocket
 
-from bridge.context import Context, ContextType
-from bridge.reply import Reply, ReplyType
-from channel.chat_channel import ChatChannel, check_prefix
-from channel.qq.qq_message import QQMessage
-from common.expired_dict import ExpiredDict
-from common.log import logger
-from common.singleton import singleton
-from common.ws_client_compat import websocket_app_run_forever
-from config import conf
+from extern_agent.bridge.context import Context, ContextType
+from extern_agent.bridge.reply import Reply, ReplyType
+from extern_agent.channel.chat_channel import ChatChannel, check_prefix
+from extern_agent.channel.qq.qq_message import QQMessage
+from extern_agent.common.expired_dict import ExpiredDict
+from extern_agent.common.log import logger
+from extern_agent.common.singleton import singleton
+from extern_agent.common.ws_client_compat import websocket_app_run_forever
+from extern_agent.config import conf
 
 # Rich media file_type constants
 QQ_FILE_TYPE_IMAGE = 1
@@ -367,7 +367,7 @@ class QQChannel(ChatChannel):
 
         is_group = qq_msg.is_group
 
-        from channel.file_cache import get_file_cache
+        from extern_agent.channel.file_cache import get_file_cache
         file_cache = get_file_cache()
 
         if is_group:

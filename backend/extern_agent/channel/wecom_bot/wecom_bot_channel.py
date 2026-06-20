@@ -19,15 +19,15 @@ import uuid
 import requests
 import websocket
 
-from bridge.context import Context, ContextType
-from bridge.reply import Reply, ReplyType
-from channel.chat_channel import ChatChannel, check_prefix
-from channel.wecom_bot.wecom_bot_message import WecomBotMessage
-from common.expired_dict import ExpiredDict
-from common.log import logger
-from common.singleton import singleton
-from common.ws_client_compat import websocket_app_run_forever
-from config import conf
+from extern_agent.bridge.context import Context, ContextType
+from extern_agent.bridge.reply import Reply, ReplyType
+from extern_agent.channel.chat_channel import ChatChannel, check_prefix
+from extern_agent.channel.wecom_bot.wecom_bot_message import WecomBotMessage
+from extern_agent.common.expired_dict import ExpiredDict
+from extern_agent.common.log import logger
+from extern_agent.common.singleton import singleton
+from extern_agent.common.ws_client_compat import websocket_app_run_forever
+from extern_agent.config import conf
 
 WECOM_WS_URL = "wss://openws.work.weixin.qq.com"
 HEARTBEAT_INTERVAL = 30
@@ -299,7 +299,7 @@ class WecomBotChannel(ChatChannel):
         wecom_msg.req_id = req_id
 
         # File cache logic (same pattern as feishu)
-        from channel.file_cache import get_file_cache
+        from extern_agent.channel.file_cache import get_file_cache
         file_cache = get_file_cache()
 
         if is_group:

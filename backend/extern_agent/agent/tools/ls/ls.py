@@ -5,9 +5,9 @@ Ls tool - List directory contents
 import os
 from typing import Dict, Any
 
-from agent.tools.base_tool import BaseTool, ToolResult
-from agent.tools.utils.truncate import truncate_head, format_size, DEFAULT_MAX_BYTES
-from common.utils import expand_path
+from extern_agent.agent.tools.base_tool import BaseTool, ToolResult
+from extern_agent.agent.tools.utils.truncate import truncate_head, format_size, DEFAULT_MAX_BYTES
+from extern_agent.common.utils import expand_path
 
 
 DEFAULT_LIMIT = 500

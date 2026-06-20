@@ -10,11 +10,11 @@ from pathlib import Path
 import hashlib
 from datetime import datetime, timedelta
 
-from agent.memory.config import MemoryConfig, get_default_memory_config
-from agent.memory.storage import MemoryStorage, MemoryChunk, SearchResult
-from agent.memory.chunker import TextChunker
-from agent.memory.embedding import EmbeddingProvider, EmbeddingCache
-from agent.memory.summarizer import MemoryFlushManager, create_memory_files_if_needed
+from extern_agent.agent.memory.config import MemoryConfig, get_default_memory_config
+from extern_agent.agent.memory.storage import MemoryStorage, MemoryChunk, SearchResult
+from extern_agent.agent.memory.chunker import TextChunker
+from extern_agent.agent.memory.embedding import EmbeddingProvider, EmbeddingCache
+from extern_agent.agent.memory.summarizer import MemoryFlushManager, create_memory_files_if_needed
 
 
 class MemoryManager:
@@ -57,7 +57,7 @@ class MemoryManager:
         # caller's state checks and risk corrupting the index.
         self.embedding_provider = embedding_provider
         if self.embedding_provider is None:
-            from common.log import logger
+            from extern_agent.common.log import logger
             logger.info(
                 "[MemoryManager] No embedding provider; memory will use keyword search only"
             )
@@ -125,7 +125,7 @@ class MemoryManager:
         if self.config.sync_on_search and self._dirty:
             await self.sync()
         
-        from common.log import logger
+        from extern_agent.common.log import logger
 
         # Perform vector search (if embedding provider available).
         # Failures degrade silently to keyword-only — no exception is raised.
@@ -301,7 +301,7 @@ class MemoryManager:
                     scope = "shared"
                 files_to_scan.append((file_path, "memory", scope, user_id))
 
-        from config import conf
+        from extern_agent.config import conf
         if conf().get("knowledge", True):
             knowledge_dir = Path(workspace_dir) / "knowledge"
             if knowledge_dir.exists():
@@ -359,7 +359,7 @@ class MemoryManager:
             try:
                 all_embeddings = self.embedding_provider.embed_batch(all_texts)
             except Exception as e:
-                from common.log import logger
+                from extern_agent.common.log import logger
                 logger.error(
                     f"[MemoryManager] Batch embedding failed for {len(all_texts)} "
                     f"chunks across {len(pending)} files: {e}. "

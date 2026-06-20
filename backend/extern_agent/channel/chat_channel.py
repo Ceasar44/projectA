@@ -5,12 +5,12 @@ import time
 from asyncio import CancelledError
 from concurrent.futures import Future, ThreadPoolExecutor
 
-from bridge.context import *
-from bridge.reply import *
-from channel.channel import Channel
-from common.dequeue import Dequeue
-from common import memory
-from common.i18n import t as _t
+from extern_agent.bridge.context import *
+from extern_agent.bridge.reply import *
+from extern_agent.channel.channel import Channel
+from extern_agent.common.dequeue import Dequeue
+from extern_agent.common import memory
+from extern_agent.common.i18n import t as _t
 from plugins import *
 
 try:
@@ -472,8 +472,8 @@ class ChatChannel(Channel):
         _send_reply so plugins (e.g. logging) still observe it.
         """
         try:
-            from agent.protocol import get_cancel_registry
-            from bridge.reply import Reply, ReplyType
+            from extern_agent.agent.protocol import get_cancel_registry
+            from extern_agent.bridge.reply import Reply, ReplyType
 
             cancelled = get_cancel_registry().cancel_session(session_id)
             text = (

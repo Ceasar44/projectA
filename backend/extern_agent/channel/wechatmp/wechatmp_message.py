@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-#
 
-from bridge.context import ContextType
-from channel.chat_message import ChatMessage
-from common.log import logger
-from common.tmp_dir import TmpDir
+from extern_agent.bridge.context import ContextType
+from extern_agent.channel.chat_message import ChatMessage
+from extern_agent.common.log import logger
+from extern_agent.common.tmp_dir import TmpDir
 
 
 class WeChatMPMessage(ChatMessage):

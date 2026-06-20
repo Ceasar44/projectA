@@ -13,18 +13,18 @@ import uuid
 
 import requests
 
-from bridge.context import Context, ContextType
-from bridge.reply import Reply, ReplyType
-from channel.chat_channel import ChatChannel, check_prefix
-from channel.weixin.weixin_api import (
+from extern_agent.bridge.context import Context, ContextType
+from extern_agent.bridge.reply import Reply, ReplyType
+from extern_agent.channel.chat_channel import ChatChannel, check_prefix
+from extern_agent.channel.weixin.weixin_api import (
     WeixinApi, upload_media_to_cdn,
     DEFAULT_BASE_URL, CDN_BASE_URL,
 )
-from channel.weixin.weixin_message import WeixinMessage
-from common.expired_dict import ExpiredDict
-from common.log import logger
-from common.singleton import singleton
-from config import conf
+from extern_agent.channel.weixin.weixin_message import WeixinMessage
+from extern_agent.common.expired_dict import ExpiredDict
+from extern_agent.common.log import logger
+from extern_agent.common.singleton import singleton
+from extern_agent.config import conf
 
 MAX_CONSECUTIVE_FAILURES = 3
 BACKOFF_DELAY = 30
@@ -260,7 +260,7 @@ class WeixinChannel(ChatChannel):
         if not self.cloud_mode:
             return
         try:
-            from common import cloud_client
+            from extern_agent.common import cloud_client
             client = getattr(cloud_client, "chat_client", None)
             if client and getattr(client, "client_id", None):
                 client.send_channel_qrcode("weixin", qrcode_url)
@@ -272,7 +272,7 @@ class WeixinChannel(ChatChannel):
         if not self.cloud_mode:
             return
         try:
-            from common import cloud_client
+            from extern_agent.common import cloud_client
             client = getattr(cloud_client, "chat_client", None)
             if client and getattr(client, "client_id", None):
                 client.send_channel_status("weixin", "connected")
@@ -474,7 +474,7 @@ class WeixinChannel(ChatChannel):
                      f"content={str(wx_msg.content)[:50]}")
 
         # File cache logic
-        from channel.file_cache import get_file_cache
+        from extern_agent.channel.file_cache import get_file_cache
         file_cache = get_file_cache()
         session_id = from_user
 

@@ -7,7 +7,7 @@ import threading
 from datetime import datetime, timedelta
 from typing import Callable, Optional
 from croniter import croniter
-from common.log import logger
+from extern_agent.common.log import logger
 
 
 def _parse_naive_local(iso_str: str) -> datetime:

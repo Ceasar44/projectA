@@ -24,8 +24,8 @@ import sys
 from dataclasses import dataclass
 from typing import Optional
 
-from common.log import logger
-from common.utils import expand_path
+from extern_agent.common.log import logger
+from extern_agent.common.utils import expand_path
 
 
 @dataclass
@@ -56,8 +56,8 @@ def clear_index(db_path, storage=None) -> int:
 
     Returns number of chunks removed.
     """
-    from agent.memory.embedding.state import cleanup_legacy_state_file
-    from agent.memory.storage import MemoryStorage
+    from extern_agent.agent.memory.embedding.state import cleanup_legacy_state_file
+    from extern_agent.agent.memory.storage import MemoryStorage
 
     owns_storage = storage is None
     if owns_storage:
@@ -152,8 +152,8 @@ def rebuild_in_process(memory_manager) -> RebuildResult:
 
 def main() -> int:
     """Standalone CLI entry. Must be run from project root (relative config path)."""
-    from config import conf, load_config
-    from agent.memory import MemoryConfig, MemoryManager
+    from extern_agent.config import conf, load_config
+    from extern_agent.agent.memory import MemoryConfig, MemoryManager
 
     load_config()
 
@@ -163,7 +163,7 @@ def main() -> int:
     logger.info(f"[RebuildIndex] Workspace: {workspace_root}")
     logger.info(f"[RebuildIndex] Index db:  {memory_config.get_db_path()}")
 
-    from bridge.agent_initializer import AgentInitializer
+    from extern_agent.bridge.agent_initializer import AgentInitializer
 
     initializer = AgentInitializer(bridge=None, agent_bridge=None)
     embedding_provider = initializer._init_embedding_provider(memory_config, session_id=None)

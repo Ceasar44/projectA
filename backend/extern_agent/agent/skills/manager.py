@@ -6,10 +6,10 @@ import os
 import json
 from typing import Dict, List, Optional
 from pathlib import Path
-from common.log import logger
-from agent.skills.types import Skill, SkillEntry, SkillSnapshot
-from agent.skills.loader import SkillLoader
-from agent.skills.formatter import format_skill_entries_for_prompt
+from extern_agent.common.log import logger
+from extern_agent.agent.skills.types import Skill, SkillEntry, SkillSnapshot
+from extern_agent.agent.skills.loader import SkillLoader
+from extern_agent.agent.skills.formatter import format_skill_entries_for_prompt
 
 SKILLS_CONFIG_FILE = "skills_config.json"
 
@@ -197,7 +197,7 @@ class SkillManager:
         :param include_disabled: Whether to include disabled skills
         :return: Filtered list of eligible skill entries
         """
-        from agent.skills.config import should_include_skill
+        from extern_agent.agent.skills.config import should_include_skill
 
         entries = list(self.skills.values())
 
@@ -210,7 +210,7 @@ class SkillManager:
         if not include_disabled:
             entries = [e for e in entries if self.is_skill_enabled(e.skill.name)]
 
-        from config import conf
+        from extern_agent.config import conf
         if not conf().get("knowledge", True):
             entries = [e for e in entries if e.skill.name != "knowledge-wiki"]
 
@@ -227,7 +227,7 @@ class SkillManager:
         :return: Tuple of (entries, missing_map) where missing_map maps
                  skill name to its missing requirements dict
         """
-        from agent.skills.config import should_include_skill, get_missing_requirements
+        from extern_agent.agent.skills.config import should_include_skill, get_missing_requirements
 
         entries = list(self.skills.values())
 
@@ -261,8 +261,8 @@ class SkillManager:
         :param skill_filter: Optional list of skill names to include
         :return: Formatted skills prompt
         """
-        from common.log import logger
-        from agent.skills.formatter import format_unavailable_skills_for_prompt
+        from extern_agent.common.log import logger
+        from extern_agent.agent.skills.formatter import format_unavailable_skills_for_prompt
 
         eligible = self.filter_skills(skill_filter=skill_filter, include_disabled=False)
         logger.debug(f"[SkillManager] Eligible: {len(eligible)} skills (total: {len(self.skills)})")

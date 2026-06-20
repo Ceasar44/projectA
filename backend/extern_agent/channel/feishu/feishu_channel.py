@@ -23,16 +23,16 @@ import uuid
 import requests
 import web
 
-from bridge.context import Context
-from bridge.context import ContextType
-from bridge.reply import Reply, ReplyType
-from channel.chat_channel import ChatChannel, check_prefix
-from channel.feishu.feishu_message import FeishuMessage
-from common import utils
-from common.expired_dict import ExpiredDict
-from common.log import logger
-from common.singleton import singleton
-from config import conf
+from extern_agent.bridge.context import Context
+from extern_agent.bridge.context import ContextType
+from extern_agent.bridge.reply import Reply, ReplyType
+from extern_agent.channel.chat_channel import ChatChannel, check_prefix
+from extern_agent.channel.feishu.feishu_message import FeishuMessage
+from extern_agent.common import utils
+from extern_agent.common.expired_dict import ExpiredDict
+from extern_agent.common.log import logger
+from extern_agent.common.singleton import singleton
+from extern_agent.config import conf
 
 # Suppress verbose logs from Lark SDK
 logging.getLogger("Lark").setLevel(logging.WARNING)
@@ -522,7 +522,7 @@ class FeiShuChanel(ChatChannel):
             return
 
         # 处理文件缓存逻辑
-        from channel.file_cache import get_file_cache
+        from extern_agent.channel.file_cache import get_file_cache
         file_cache = get_file_cache()
 
         # 获取 session_id（用于缓存关联）

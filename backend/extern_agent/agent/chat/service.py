@@ -8,7 +8,7 @@ into the CHAT socket protocol format (content chunks with segment_id, tool_calls
 import time
 from typing import Callable, Optional
 
-from common.log import logger
+from extern_agent.common.log import logger
 
 
 class ChatService:
@@ -158,7 +158,7 @@ class ChatService:
         # Run the agent with our event callback ---------------------------
         logger.info(f"[ChatService] Starting agent run: session={session_id}, query={query[:80]}")
 
-        from config import conf
+        from extern_agent.config import conf
         max_context_turns = conf().get("agent_max_context_turns", 20)
 
         # Get full system prompt with skills
@@ -169,11 +169,11 @@ class ChatService:
             messages_copy = agent.messages.copy()
             original_length = len(agent.messages)
 
-        from agent.protocol.agent_stream import AgentStreamExecutor
+        from extern_agent.agent.protocol.agent_stream import AgentStreamExecutor
 
         # Register a cancel token so /cancel can abort this in-flight run.
         # IM channels key on session_id (no per-turn request_id here).
-        from agent.protocol import get_cancel_registry
+        from extern_agent.agent.protocol import get_cancel_registry
         registry = get_cancel_registry()
         cancel_event = registry.register(session_id, session_id=session_id) if session_id else None
 
@@ -275,13 +275,13 @@ class ChatService:
     @staticmethod
     def _persist_messages(session_id: str, new_messages: list, channel_type: str = ""):
         try:
-            from config import conf
+            from extern_agent.config import conf
             if not conf().get("conversation_persistence", True):
                 return
         except Exception:
             pass
         try:
-            from agent.memory import get_conversation_store
+            from extern_agent.agent.memory import get_conversation_store
             get_conversation_store().append_messages(
                 session_id, new_messages, channel_type=channel_type
             )

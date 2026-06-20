@@ -1,10 +1,10 @@
 from models.bot_factory import create_bot
-from bridge.context import Context
-from bridge.reply import Reply
-from common import const
-from common.log import logger
-from common.singleton import singleton
-from config import conf
+from extern_agent.bridge.context import Context
+from extern_agent.bridge.reply import Reply
+from extern_agent.common import const
+from extern_agent.common.log import logger
+from extern_agent.common.singleton import singleton
+from extern_agent.config import conf
 from translate.factory import create_translator
 from voice.factory import create_voice
 
@@ -175,7 +175,7 @@ class Bridge(object):
         Get agent bridge for agent-based conversations
         """
         if self._agent_bridge is None:
-            from bridge.agent_bridge import AgentBridge
+            from extern_agent.bridge.agent_bridge import AgentBridge
             self._agent_bridge = AgentBridge(self)
         return self._agent_bridge
 

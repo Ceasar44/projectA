@@ -13,7 +13,7 @@ import os
 from datetime import datetime
 from typing import Dict, List, Optional
 from pathlib import Path
-from common.log import logger
+from extern_agent.common.log import logger
 
 
 class MemoryService:

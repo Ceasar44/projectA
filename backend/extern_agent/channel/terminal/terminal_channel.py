@@ -3,12 +3,12 @@ import os
 import sys
 import time
 
-from bridge.context import *
-from bridge.reply import Reply, ReplyType
-from channel.chat_channel import ChatChannel, check_prefix
-from channel.chat_message import ChatMessage
-from common.log import logger
-from config import conf
+from extern_agent.bridge.context import *
+from extern_agent.bridge.reply import Reply, ReplyType
+from extern_agent.channel.chat_channel import ChatChannel, check_prefix
+from extern_agent.channel.chat_message import ChatMessage
+from extern_agent.common.log import logger
+from extern_agent.config import conf
 
 
 class _Style:

@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import sys
-import types
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -25,68 +23,48 @@ if TYPE_CHECKING:
     from app.domain.customer_support.tools import SupportToolRegistry
 
 
-class _SafeExternAgentLogger:
-    def debug(self, message: Any, *args, **kwargs) -> None:
+CRM_EXTERN_AGENT_WORKSPACE = Path(__file__).resolve().parents[3] / ".runtime" / "crm_extern_agent"
+CRM_EXTERN_AGENT_RUNTIME_CONFIG = {
+    "agent_max_context_turns": 20,
+    "agent_max_steps": 8,
+    "agent_max_context_tokens": 50000,
+    "conversation_persistence": False,
+    "enable_thinking": False,
+    "knowledge": False,
+    "debug": False,
+}
+EXTERN_AGENT_WORKSPACE_TOOLS = {
+    "read",
+    "write",
+    "edit",
+    "bash",
+    "grep",
+    "find",
+    "ls",
+    "web_fetch",
+    "send",
+    "browser",
+}
+
+
+def _set_extern_agent_workspace(workspace_dir: Path) -> None:
+    """Point extern_agent's global workspace config at the CRM workspace."""
+    try:
+        from extern_agent.config import conf
+
+        runtime_config = conf()
+        if isinstance(runtime_config, dict):
+            for key, value in CRM_EXTERN_AGENT_RUNTIME_CONFIG.items():
+                runtime_config.setdefault(key, value)
+            runtime_config["agent_workspace"] = str(workspace_dir)
+    except Exception:
         return None
-
-    def info(self, message: Any, *args, **kwargs) -> None:
-        return None
-
-    def warning(self, message: Any, *args, **kwargs) -> None:
-        return None
-
-    def error(self, message: Any, *args, **kwargs) -> None:
-        return None
-
-    def exception(self, message: Any, *args, **kwargs) -> None:
-        return None
-
-
-def _ensure_extern_agent_runtime() -> None:
-    """Expose backend/extern_agent as the legacy top-level agent runtime."""
-    backend_root = Path(__file__).resolve().parents[3]
-    extern_agent_root = backend_root / "extern_agent"
-    if str(extern_agent_root) not in sys.path:
-        sys.path.insert(0, str(extern_agent_root))
-
-    common_module = sys.modules.setdefault("common", types.ModuleType("common"))
-    if not hasattr(common_module, "__path__"):
-        common_module.__path__ = [str(extern_agent_root / "common")]
-
-    log_module = sys.modules.get("common.log")
-    if log_module is None:
-        log_module = types.ModuleType("common.log")
-        sys.modules["common.log"] = log_module
-    log_module.logger = _SafeExternAgentLogger()
-    setattr(common_module, "log", log_module)
-
-    if "common.i18n" not in sys.modules:
-        i18n_module = types.ModuleType("common.i18n")
-        i18n_module.t = lambda zh, en=None: en or zh
-        i18n_module.get_language = lambda: "en"
-        sys.modules["common.i18n"] = i18n_module
-        setattr(common_module, "i18n", i18n_module)
-
-    if "config" not in sys.modules:
-        runtime_config = {
-            "agent_max_context_turns": 20,
-            "agent_max_steps": 8,
-            "agent_max_context_tokens": 50000,
-            "conversation_persistence": False,
-            "enable_thinking": False,
-            "knowledge": False,
-            "debug": False,
-        }
-        config_module = types.ModuleType("config")
-        config_module.conf = lambda: runtime_config
-        sys.modules["config"] = config_module
 
 
 class CrmExternAgentModel:
     """extern_agent LLMModel adapter backed by the backend OpenAI provider."""
 
     def __init__(self, settings: Settings) -> None:
-        _ensure_extern_agent_runtime()
         self.model = settings.ai_model
         self.provider = OpenAIProvider(
             api_key=settings.ai_api_key or None,
@@ -223,8 +201,7 @@ class CrmSupportTool:
         loop: asyncio.AbstractEventLoop,
         is_stale: Callable[[], bool],
     ) -> None:
-        _ensure_extern_agent_runtime()
-        from agent.tools.base_tool import ToolStage
+        from extern_agent.agent.tools.base_tool import ToolStage
 
         self.name = name
         self.description = description
@@ -242,7 +219,7 @@ class CrmSupportTool:
         return self.execute(params)
 
     def execute(self, params: dict[str, Any]):
-        from agent.tools.base_tool import ToolResult
+        from extern_agent.agent.tools.base_tool import ToolResult
 
         if self.is_stale():
             return ToolResult.fail({"success": False, "message": "This agent turn is stale."})
@@ -368,8 +345,7 @@ class CrmMemorySearchTool:
     }
 
     def __init__(self, memory_manager: CrmTurnMemoryManager, is_stale: Callable[[], bool]) -> None:
-        _ensure_extern_agent_runtime()
-        from agent.tools.base_tool import ToolStage
+        from extern_agent.agent.tools.base_tool import ToolStage
 
         self.stage = ToolStage.PRE_PROCESS
         self.memory_manager = memory_manager
@@ -382,7 +358,7 @@ class CrmMemorySearchTool:
         return self.execute(params)
 
     def execute(self, params: dict[str, Any]):
-        from agent.tools.base_tool import ToolResult
+        from extern_agent.agent.tools.base_tool import ToolResult
 
         if self.is_stale():
             return ToolResult.fail({"success": False, "message": "This agent turn is stale."})
@@ -413,8 +389,7 @@ class CrmMemoryGetTool:
     }
 
     def __init__(self, memory_manager: CrmTurnMemoryManager, is_stale: Callable[[], bool]) -> None:
-        _ensure_extern_agent_runtime()
-        from agent.tools.base_tool import ToolStage
+        from extern_agent.agent.tools.base_tool import ToolStage
 
         self.stage = ToolStage.PRE_PROCESS
         self.memory_manager = memory_manager
@@ -427,7 +402,7 @@ class CrmMemoryGetTool:
         return self.execute(params)
 
     def execute(self, params: dict[str, Any]):
-        from agent.tools.base_tool import ToolResult
+        from extern_agent.agent.tools.base_tool import ToolResult
 
         if self.is_stale():
             return ToolResult.fail({"success": False, "message": "This agent turn is stale."})
@@ -453,8 +428,7 @@ class CrmMemoryDraftTool:
     }
 
     def __init__(self, memory_manager: CrmTurnMemoryManager, is_stale: Callable[[], bool]) -> None:
-        _ensure_extern_agent_runtime()
-        from agent.tools.base_tool import ToolStage
+        from extern_agent.agent.tools.base_tool import ToolStage
 
         self.stage = ToolStage.PRE_PROCESS
         self.memory_manager = memory_manager
@@ -467,7 +441,7 @@ class CrmMemoryDraftTool:
         return self.execute(params)
 
     def execute(self, params: dict[str, Any]):
-        from agent.tools.base_tool import ToolResult
+        from extern_agent.agent.tools.base_tool import ToolResult
 
         if self.is_stale():
             return ToolResult.fail({"success": False, "message": "This agent turn is stale."})
@@ -522,17 +496,18 @@ class CrmExternAgentAdapter:
         is_stale: Callable[[], bool],
         cancel_event: Event | None,
     ) -> tuple[str, dict[str, Any], list[dict[str, Any]]]:
-        _ensure_extern_agent_runtime()
-        from agent.protocol import Agent
+        from extern_agent.agent.protocol import Agent
 
         if is_stale():
             return "", {"provider": "extern_agent", "status": "superseded", "usage": {}}, []
 
+        workspace_dir = self._prepare_workspace()
         memory_manager = CrmTurnMemoryManager(identity=memory_identity, snapshot=memory_snapshot)
         tools = [
             *self._build_tools(registry, config.allowed_tools, loop, is_stale),
             *self._build_memory_tools(memory_manager, is_stale),
         ]
+        tools.extend(self._build_extern_agent_tools(workspace_dir, existing_tools=tools))
         system_prompt = self._build_system_prompt(
             settings,
             config,
@@ -549,7 +524,7 @@ class CrmExternAgentAdapter:
             output_mode="logger",
             max_steps=8,
             enable_skills=False,
-            workspace_dir=None,
+            workspace_dir=str(workspace_dir),
             memory_manager=memory_manager,
         )
         agent.get_full_system_prompt = lambda skill_filter=None: system_prompt
@@ -593,6 +568,19 @@ class CrmExternAgentAdapter:
         )
 
     @staticmethod
+    def _prepare_workspace() -> Path:
+        workspace_dir = CRM_EXTERN_AGENT_WORKSPACE
+        workspace_dir.mkdir(parents=True, exist_ok=True)
+        _set_extern_agent_workspace(workspace_dir)
+        try:
+            from extern_agent.agent.prompt import ensure_workspace
+
+            ensure_workspace(str(workspace_dir), create_templates=True)
+        except Exception:
+            pass
+        return workspace_dir
+
+    @staticmethod
     def _build_tools(
         registry: SupportToolRegistry,
         allowed_tools: list[str],
@@ -622,6 +610,53 @@ class CrmExternAgentAdapter:
             CrmMemoryGetTool(memory_manager, is_stale),
             CrmMemoryDraftTool(memory_manager, is_stale),
         ]
+
+    @staticmethod
+    def _build_extern_agent_tools(workspace_dir: Path, existing_tools: list[Any]) -> list[Any]:
+        _set_extern_agent_workspace(workspace_dir)
+        existing_names = {
+            str(getattr(tool, "name", "") or "")
+            for tool in existing_tools
+            if getattr(tool, "name", None)
+        }
+        loaded: list[Any] = []
+
+        try:
+            from extern_agent.agent.tools import ToolManager
+
+            tool_manager = ToolManager()
+            tool_manager.load_tools()
+            tool_manager.refresh_mcp_if_changed()
+
+            for tool_name in list(tool_manager.tool_classes.keys()):
+                if tool_name in existing_names:
+                    continue
+                tool = tool_manager.create_tool(tool_name)
+                if not tool:
+                    continue
+                CrmExternAgentAdapter._bind_workspace_to_tool(tool, workspace_dir)
+                loaded.append(tool)
+                existing_names.add(tool_name)
+
+            for tool_name, mcp_tool in list(tool_manager._mcp_tool_instances.items()):
+                if tool_name in existing_names:
+                    continue
+                loaded.append(mcp_tool)
+                existing_names.add(tool_name)
+        except Exception:
+            return loaded
+
+        return loaded
+
+    @staticmethod
+    def _bind_workspace_to_tool(tool: Any, workspace_dir: Path) -> None:
+        if getattr(tool, "name", "") not in EXTERN_AGENT_WORKSPACE_TOOLS:
+            return
+        config = dict(getattr(tool, "config", None) or {})
+        config["cwd"] = str(workspace_dir)
+        tool.config = config
+        if hasattr(tool, "cwd"):
+            tool.cwd = str(workspace_dir)
 
     @staticmethod
     def _history_messages(conversation: Conversation, customer_message: str) -> list[dict[str, Any]]:
@@ -657,6 +692,7 @@ class CrmExternAgentAdapter:
                     "conversation_id": (
                         conversation.id if conversation else memory_manager.identity.conversation_id
                     ),
+                    "workspace": str(CRM_EXTERN_AGENT_WORKSPACE),
                 },
             )
         )

@@ -4,8 +4,8 @@ import time
 from wechatpy.client import WeChatClient
 from wechatpy.exceptions import APILimitedException
 
-from channel.wechatmp.common import *
-from common.log import logger
+from extern_agent.channel.wechatmp.common import *
+from extern_agent.common.log import logger
 
 
 class WechatMPClient(WeChatClient):

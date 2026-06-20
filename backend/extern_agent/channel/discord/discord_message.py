@@ -7,10 +7,10 @@ attachments on demand inside the async event loop.
 """
 import os
 
-from bridge.context import ContextType
-from channel.chat_message import ChatMessage
-from common.utils import expand_path
-from config import conf
+from extern_agent.bridge.context import ContextType
+from extern_agent.channel.chat_message import ChatMessage
+from extern_agent.common.utils import expand_path
+from extern_agent.config import conf
 
 
 class DiscordMessage(ChatMessage):

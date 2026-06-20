@@ -17,11 +17,11 @@ If either condition is missing, this module is never loaded and the
 program continues as a purely local application.
 """
 
-from bridge.context import Context, ContextType
-from bridge.reply import Reply, ReplyType
-from common.log import logger
+from extern_agent.bridge.context import Context, ContextType
+from extern_agent.bridge.reply import Reply, ReplyType
+from extern_agent.common.log import logger
 from linkai import LinkAIClient, PushMsg
-from config import conf, pconf, plugin_config, available_setting, write_plugin_config, get_root
+from extern_agent.config import conf, pconf, plugin_config, available_setting, write_plugin_config, get_root
 from plugins import PluginManager
 import threading
 import time
@@ -68,10 +68,10 @@ class CloudClient(LinkAIClient):
         """Lazy-init SkillService so it is available once SkillManager exists."""
         if self._skill_service is None:
             try:
-                from agent.skills.manager import SkillManager
-                from agent.skills.service import SkillService
-                from config import conf
-                from common.utils import expand_path
+                from extern_agent.agent.skills.manager import SkillManager
+                from extern_agent.agent.skills.service import SkillService
+                from extern_agent.config import conf
+                from extern_agent.common.utils import expand_path
                 workspace_root = expand_path(conf().get("agent_workspace", "~/cow"))
                 manager = SkillManager(custom_dir=os.path.join(workspace_root, "skills"))
                 self._skill_service = SkillService(manager)
@@ -85,9 +85,9 @@ class CloudClient(LinkAIClient):
         """Lazy-init MemoryService."""
         if self._memory_service is None:
             try:
-                from agent.memory.service import MemoryService
-                from config import conf
-                from common.utils import expand_path
+                from extern_agent.agent.memory.service import MemoryService
+                from extern_agent.config import conf
+                from extern_agent.common.utils import expand_path
                 workspace_root = expand_path(conf().get("agent_workspace", "~/cow"))
                 self._memory_service = MemoryService(workspace_root)
                 logger.debug("[CloudClient] MemoryService initialised")
@@ -100,9 +100,9 @@ class CloudClient(LinkAIClient):
         """Lazy-init KnowledgeService."""
         if self._knowledge_service is None:
             try:
-                from agent.knowledge.service import KnowledgeService
-                from config import conf
-                from common.utils import expand_path
+                from extern_agent.agent.knowledge.service import KnowledgeService
+                from extern_agent.config import conf
+                from extern_agent.common.utils import expand_path
                 workspace_root = expand_path(conf().get("agent_workspace", "~/cow"))
                 self._knowledge_service = KnowledgeService(workspace_root)
                 logger.debug("[CloudClient] KnowledgeService initialised")
@@ -115,8 +115,8 @@ class CloudClient(LinkAIClient):
         """Lazy-init ChatService (requires AgentBridge via Bridge singleton)."""
         if self._chat_service is None:
             try:
-                from agent.chat.service import ChatService
-                from bridge.bridge import Bridge
+                from extern_agent.agent.chat.service import ChatService
+                from extern_agent.bridge.bridge import Bridge
                 agent_bridge = Bridge().get_agent_bridge()
                 self._chat_service = ChatService(agent_bridge)
                 logger.debug("[CloudClient] ChatService initialised")
@@ -129,7 +129,7 @@ class CloudClient(LinkAIClient):
         """Lazy-init SessionService."""
         if self._session_service is None:
             try:
-                from agent.chat.session_service import SessionService
+                from extern_agent.agent.chat.session_service import SessionService
                 self._session_service = SessionService()
                 logger.debug("[CloudClient] SessionService initialised")
             except Exception as e:
@@ -623,7 +623,7 @@ class CloudClient(LinkAIClient):
         logger.info(f"[CloudClient] history query: session={session_id}, page={page}, page_size={page_size}")
 
         try:
-            from agent.memory.conversation_store import get_conversation_store
+            from extern_agent.agent.memory.conversation_store import get_conversation_store
             store = get_conversation_store()
             result = store.load_history_page(
                 session_id=session_id,
@@ -752,7 +752,7 @@ def copy_send_file(src_path: str, workspace_root: str) -> str:
     import shutil
     import uuid
 
-    from common.utils import expand_path
+    from extern_agent.common.utils import expand_path
 
     base = get_website_base_url()
     if not base or not src_path or not os.path.isfile(src_path):

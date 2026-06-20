@@ -9,7 +9,7 @@ and generating AI titles for conversation sessions. Backed by ConversationStore
 import re
 from typing import Optional
 
-from common.log import logger
+from extern_agent.common.log import logger
 
 
 def _truncate_fallback_title(user_message: str, max_len: int = 30) -> str:
@@ -37,7 +37,7 @@ def generate_session_title(user_message: str, assistant_reply: str = "") -> str:
     """
     fallback = _truncate_fallback_title(user_message)
     try:
-        from bridge.bridge import Bridge
+        from extern_agent.bridge.bridge import Bridge
         from models.session_manager import Session
         bot = Bridge().get_bot("chat")
 
@@ -86,13 +86,13 @@ class SessionService:
     """
 
     def _get_store(self):
-        from agent.memory import get_conversation_store
+        from extern_agent.agent.memory import get_conversation_store
         return get_conversation_store()
 
     def _remove_agent(self, session_id: str):
         """Remove the in-memory Agent instance for a session if it exists."""
         try:
-            from bridge.bridge import Bridge
+            from extern_agent.bridge.bridge import Bridge
             ab = Bridge().get_agent_bridge()
             if session_id in ab.agents:
                 del ab.agents[session_id]

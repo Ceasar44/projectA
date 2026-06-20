@@ -13,7 +13,7 @@ import threading
 from typing import Optional, Callable, Any, List, Dict
 from pathlib import Path
 from datetime import datetime
-from common.log import logger
+from extern_agent.common.log import logger
 
 
 SUMMARIZE_SYSTEM_PROMPT_ZH = """你是一个对话记录助手。请将对话内容归纳为当天的日常记录。
@@ -160,7 +160,7 @@ DREAM_USER_PROMPT_EN = """## Current long-term memory (MEMORY.md)
 def _is_en() -> bool:
     """True when the resolved UI language is English."""
     try:
-        from common import i18n
+        from extern_agent.common import i18n
         return i18n.get_language() == "en"
     except Exception:
         return False
@@ -461,7 +461,7 @@ class MemoryFlushManager:
                 days=lookback_days,
                 daily_content=daily_content or "(no recent daily records)",
             )
-            from agent.protocol.models import LLMRequest
+            from extern_agent.agent.protocol.models import LLMRequest
             # Scale max_tokens based on input size to avoid truncating large MEMORY.md
             input_chars = len(memory_content) + len(daily_content)
             dream_max_tokens = max(2000, min(input_chars, 8000))
@@ -677,7 +677,7 @@ class MemoryFlushManager:
 
     def _call_llm_for_summary(self, conversation_text: str) -> str:
         """Call LLM to generate a concise summary of the conversation."""
-        from agent.protocol.models import LLMRequest
+        from extern_agent.agent.protocol.models import LLMRequest
         
         request = LLMRequest(
             messages=[{"role": "user", "content": _summarize_user_prompt().format(conversation=conversation_text)}],
