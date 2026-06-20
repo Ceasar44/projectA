@@ -34,6 +34,15 @@ _schema_ensured = False
 _schema_lock = Lock()
 
 
+def _isoformat(value) -> str | None:
+    return value.isoformat() if isinstance(value, datetime) else None
+
+
+def _datetime_sort_key(item, field_name: str) -> float:
+    value = getattr(item, field_name, None)
+    return value.timestamp() if isinstance(value, datetime) else 0.0
+
+
 class AIWorkspaceService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -112,10 +121,18 @@ class AIWorkspaceService:
         return prompt, completion, total
 
     def _customer_context(self, customer: Customer) -> dict[str, object]:
-        conversations = sorted(customer.conversations, key=lambda item: item.updated_at or "", reverse=True)
+        conversations = sorted(
+            customer.conversations,
+            key=lambda item: _datetime_sort_key(item, "updated_at"),
+            reverse=True,
+        )
         recent_messages: list[dict[str, str]] = []
         for conversation in conversations[:3]:
-            ordered_messages = sorted(conversation.messages, key=lambda item: item.created_at or "", reverse=True)
+            ordered_messages = sorted(
+                conversation.messages,
+                key=lambda item: _datetime_sort_key(item, "created_at"),
+                reverse=True,
+            )
             for message in ordered_messages[:4]:
                 recent_messages.append(
                     {
@@ -457,8 +474,8 @@ class AIWorkspaceService:
             "escalationKeywords": config.escalation_keywords or [],
             "replyStyle": config.reply_style,
             "createdByName": config.created_by_name,
-            "createdAt": config.created_at.isoformat() if config.created_at else None,
-            "updatedAt": config.updated_at.isoformat() if config.updated_at else None,
+            "createdAt": _isoformat(config.created_at),
+            "updatedAt": _isoformat(config.updated_at),
         }
 
     async def upsert_customer_service_config(self, payload: dict, auth_context) -> dict[str, object]:
@@ -566,7 +583,7 @@ class AIWorkspaceService:
                 "replyStyle": config.reply_style,
                 "salesFocus": config.sales_focus,
                 "knowledgeEntryIds": config.knowledge_entry_ids or [],
-                "updatedAt": config.updated_at.isoformat() if config.updated_at else None,
+                "updatedAt": _isoformat(config.updated_at),
                 "customer": (
                     {
                         "id": customer_map[config.customer_id].id,
@@ -606,7 +623,7 @@ class AIWorkspaceService:
                 "sources": row.sources or [],
                 "agentStatus": row.agent_status,
                 "usageTotalTokens": row.usage_total_tokens,
-                "createdAt": row.created_at.isoformat() if row.created_at else None,
+                "createdAt": _isoformat(row.created_at),
             }
             for row in rows
         ]

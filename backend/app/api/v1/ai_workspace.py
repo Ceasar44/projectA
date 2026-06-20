@@ -14,7 +14,7 @@ async def generate_outreach(
     payload: dict,
     auth: AuthContext = Depends(get_auth_context),
     session: AsyncSession = Depends(get_session),
-) -> dict[str, object]:
+) -> dict[str, object] | ORJSONResponse:
     customer_id = str(payload.get("customerId", "")).strip()
     if not customer_id:
         return ORJSONResponse({"error": "customerId is required"}, status_code=400)
@@ -42,7 +42,7 @@ async def send_outreach(
     payload: dict,
     auth: AuthContext = Depends(get_auth_context),
     session: AsyncSession = Depends(get_session),
-) -> dict[str, object]:
+) -> dict[str, object] | ORJSONResponse:
     draft_id = str(payload.get("draftId", "")).strip()
     subject = str(payload.get("subject", "")).strip()
     content = str(payload.get("content", "")).strip()
@@ -70,7 +70,7 @@ async def analyze_intent(
     payload: dict,
     auth: AuthContext = Depends(get_auth_context),
     session: AsyncSession = Depends(get_session),
-) -> dict[str, object]:
+) -> dict[str, object] | ORJSONResponse:
     customer_id = str(payload.get("customerId", "")).strip()
     communication_goal = str(payload.get("communicationGoal", "")).strip()
     if not customer_id or not communication_goal:
@@ -104,7 +104,7 @@ async def update_customer_service_settings(
     payload: dict,
     auth: AuthContext = Depends(get_auth_context),
     session: AsyncSession = Depends(get_session),
-) -> dict[str, object]:
+) -> dict[str, object] | ORJSONResponse:
     scope = str(payload.get("scope", "global")).strip()
     if scope not in {"global", "customer"}:
         return ORJSONResponse({"error": "scope must be global or customer"}, status_code=400)

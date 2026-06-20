@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import select
@@ -34,6 +35,15 @@ DEFAULT_ALLOWED_TOOLS = [
     "trigger_webhook",
     "schedule_followup",
 ]
+
+
+def _isoformat(value: Any) -> str | None:
+    return value.isoformat() if isinstance(value, datetime) else None
+
+
+def _datetime_sort_key(item: Any, field_name: str) -> float:
+    value = getattr(item, field_name, None)
+    return value.timestamp() if isinstance(value, datetime) else 0.0
 
 
 def analyze_sentiment(message: str) -> str:
@@ -320,9 +330,7 @@ class CustomerSupportAgentService:
                 "conversationId": assistant_message.conversation_id,
                 "role": assistant_message.role,
                 "content": assistant_message.content,
-                "createdAt": assistant_message.created_at.isoformat()
-                if assistant_message.created_at
-                else None,
+                "createdAt": _isoformat(assistant_message.created_at),
             },
             automation_matches=automation_matches,
         )
@@ -516,7 +524,10 @@ class CustomerSupportAgentService:
             system_parts.append(f"Knowledge base:\n{knowledge_text}")
 
         messages: list[dict[str, Any]] = [{"role": "system", "content": "\n".join(system_parts)}]
-        sorted_messages = sorted(conversation.messages, key=lambda item: item.created_at or "")
+        sorted_messages = sorted(
+            conversation.messages,
+            key=lambda item: _datetime_sort_key(item, "created_at"),
+        )
         for item in sorted_messages[-12:]:
             role = item.role
             if role == "customer":

@@ -59,7 +59,7 @@ available_setting = {
     "azure_openai_dalle_api_key": "", # [optional] azure openai key for image replies; defaults to open_ai_api_key
     "azure_openai_dalle_deployment_id":"", # [optional] azure openai deployment id for image replies; defaults to text_to_image
     "image_proxy": True,  # whether an image proxy is needed; required when accessing LinkAI from mainland China
-    "image_create_prefix": ["鐢?, "鐪?, "鎵?],  # prefixes that enable image replies
+    "image_create_prefix": ["画", "看", "找"],  # prefixes that enable image replies
     "concurrency_in_session": 1,  # max number of in-flight messages per session; values >1 may cause out-of-order replies
     "image_create_size": "256x256",  # image size, options: 256x256, 512x512, 1024x1024 (dall-e-3 defaults to 1024x1024)
     "group_chat_exit_group": False,

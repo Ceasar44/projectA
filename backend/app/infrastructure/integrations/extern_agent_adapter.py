@@ -4,6 +4,7 @@ import asyncio
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from threading import Event
 from typing import TYPE_CHECKING, Any
@@ -22,6 +23,7 @@ if TYPE_CHECKING:
     from app.domain.customer_support.schemas import SupportAgentConfig
     from app.domain.customer_support.tools import SupportToolRegistry
 
+from extern_agent.agent.protocol.models import LLMModel
 
 CRM_EXTERN_AGENT_WORKSPACE = Path(__file__).resolve().parents[3] / ".runtime" / "crm_extern_agent"
 CRM_EXTERN_AGENT_RUNTIME_CONFIG = {
@@ -61,7 +63,7 @@ def _set_extern_agent_workspace(workspace_dir: Path) -> None:
         return None
 
 
-class CrmExternAgentModel:
+class CrmExternAgentModel(LLMModel):
     """extern_agent LLMModel adapter backed by the backend OpenAI provider."""
 
     def __init__(self, settings: Settings) -> None:
@@ -660,7 +662,7 @@ class CrmExternAgentAdapter:
 
     @staticmethod
     def _history_messages(conversation: Conversation, customer_message: str) -> list[dict[str, Any]]:
-        rows = sorted(conversation.messages, key=lambda item: item.created_at or "")
+        rows = sorted(conversation.messages, key=CrmExternAgentAdapter._message_sort_key)
         if rows and rows[-1].role == "customer" and rows[-1].content == customer_message:
             rows = rows[:-1]
         history = []
@@ -668,6 +670,11 @@ class CrmExternAgentAdapter:
             role = "user" if item.role == "customer" else "assistant"
             history.append({"role": role, "content": [{"type": "text", "text": item.content}]})
         return history
+
+    @staticmethod
+    def _message_sort_key(item: Any) -> float:
+        created_at = getattr(item, "created_at", None)
+        return created_at.timestamp() if isinstance(created_at, datetime) else 0.0
 
     @staticmethod
     def _build_system_prompt(

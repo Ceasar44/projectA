@@ -1,10 +1,14 @@
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.infrastructure.db.base import Base
+
+if TYPE_CHECKING:
+    from app.infrastructure.db.models.team import Ticket
 
 
 class Customer(Base):
